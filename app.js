@@ -1,24 +1,31 @@
 /**
- * APEX ATHLETE - Elite AI & Biofeedback Engine
- * Features: Auto Progressive Overload, Adaptive TDEE, Readiness Score, Padel Balancer, In-App AI Co-Pilot
+ * APEX ATHLETE - Elite AI & Biofeedback Engine v2
+ * High-Contrast Titanium Slate | Audio Metronome | Volume Chart | PWA
  */
 
 const STATE = {
     currentTab: 'workout',
     selectedWorkoutId: 'day_1',
-    loggedSets: {}, // { "ex_1_1": [ { set: 1, weight: 26, reps: 10, done: true } ] }
-    previousSessions: {}, // historical bests
+    loggedSets: {},
+    previousSessions: {},
     mealsDone: {},
     weightHistory: [],
     readiness: {
         sleep: 5,
         energy: 4,
-        joints: 'good', // 'good', 'sore', 'pain'
+        joints: 'good',
         score: 92,
         statusText: 'آمادگی عالی: سیستم عصبی و عضلات آماده حمله به رکوردها'
     },
     padelMatchToday: false,
     adaptiveCaloriesOffset: 0,
+    metronome: {
+        isRunning: false,
+        timerId: null,
+        currentPhase: 0, // 0..2 = Down (3s), 3 = Pause (1s), 4 = Up (1s)
+        currentRep: 1,
+        totalReps: 10
+    },
     chatMessages: [
         { sender: 'coach', text: 'سلام امیر جان! من هوش مصنوعی اختصاصی و مربی همراه تو هستم. برگه اینبادی و شرایط بدنی تو (۴۳.۶ کیلو عضله اسکلتی، شانه راست و ساق چپ) در حافظه من ذخیره است. هر سوالی در مورد جایگزینی غذاها، تنظیم فشار یا مفاصل داشتی بپرس.' }
     ],
@@ -40,7 +47,6 @@ function initStorage() {
         if (prev) {
             STATE.previousSessions = JSON.parse(prev);
         } else {
-            // Seed realistic previous baseline from starting weights
             STATE.previousSessions = {
                 'ex_1_1': { weight: 120, reps: 10 },
                 'ex_1_2': { weight: 24, reps: 10 },
@@ -100,19 +106,30 @@ function savePadel() {
     localStorage.setItem('apex_ai_padel', JSON.stringify(STATE.padelMatchToday));
 }
 
-// Clean Audio Beep
+// Web Audio API Synthesizer
+let audioCtx = null;
+function getAudioContext() {
+    if (!audioCtx) {
+        const AudioClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioClass) audioCtx = new AudioClass();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    return audioCtx;
+}
+
 function playChime() {
     try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
-        const ctx = new AudioCtx();
+        const ctx = getAudioContext();
+        if (!ctx) return;
         const now = ctx.currentTime;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
 
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, now); // A5
-        osc.frequency.exponentialRampToValueAtTime(1320, now + 0.25); // E6
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.exponentialRampToValueAtTime(1320, now + 0.25);
 
         gain.gain.setValueAtTime(0.15, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
@@ -122,6 +139,103 @@ function playChime() {
         osc.start(now);
         osc.stop(now + 0.6);
     } catch (e) {}
+}
+
+function playBeep(freq, duration) {
+    try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + duration);
+    } catch (e) {}
+}
+
+// FEATURE 1: Audio Tempo Metronome (3-1-1-0 Execution Engine)
+function toggleMetronome() {
+    if (STATE.metronome.isRunning) {
+        stopMetronome();
+    } else {
+        startMetronome();
+    }
+}
+
+function startMetronome() {
+    STATE.metronome.isRunning = true;
+    STATE.metronome.currentPhase = 0;
+    STATE.metronome.currentRep = 1;
+
+    const btn = document.getElementById('btn-metronome-toggle');
+    if (btn) btn.innerText = 'توقف مترونوم';
+
+    runMetronomeStep();
+}
+
+function stopMetronome() {
+    STATE.metronome.isRunning = false;
+    clearTimeout(STATE.metronome.timerId);
+
+    const btn = document.getElementById('btn-metronome-toggle');
+    const pill = document.getElementById('metronome-status-pill');
+
+    if (btn) btn.innerText = 'شروع مترونوم ۳-۱-۱-۰';
+    if (pill) pill.innerText = 'آماده برای ست جدید';
+}
+
+function runMetronomeStep() {
+    if (!STATE.metronome.isRunning) return;
+
+    const pill = document.getElementById('metronome-status-pill');
+    const phase = STATE.metronome.currentPhase;
+    const rep = STATE.metronome.currentRep;
+
+    // Phases: 0, 1, 2 = Down (3s) | 3 = Pause (1s) | 4 = Up (1s)
+    if (phase === 0) {
+        if (pill) pill.innerText = `تکرار ${rep}: پایین آمدن (۳ ثانیه)`;
+        playBeep(440, 0.15); // A4
+    } else if (phase === 1) {
+        if (pill) pill.innerText = `تکرار ${rep}: پایین آمدن (۲ ثانیه)`;
+        playBeep(440, 0.15);
+    } else if (phase === 2) {
+        if (pill) pill.innerText = `تکرار ${rep}: پایین آمدن (۱ ثانیه)`;
+        playBeep(440, 0.15);
+    } else if (phase === 3) {
+        if (pill) pill.innerText = `تکرار ${rep}: مکث عمیق در کشش (۱ ثانیه)`;
+        playBeep(660, 0.2); // E5
+    } else if (phase === 4) {
+        if (pill) pill.innerText = `تکرار ${rep}: بالا بردن پرقدرت (۱ ثانیه)`;
+        playBeep(880, 0.25); // A5
+    }
+
+    STATE.metronome.timerId = setTimeout(() => {
+        if (!STATE.metronome.isRunning) return;
+
+        STATE.metronome.currentPhase++;
+        if (STATE.metronome.currentPhase > 4) {
+            STATE.metronome.currentPhase = 0;
+            STATE.metronome.currentRep++;
+
+            if (STATE.metronome.currentRep > STATE.metronome.totalReps) {
+                // Completed 10 reps
+                stopMetronome();
+                playChime();
+                alert(`ست ${STATE.metronome.totalReps} تکراری با ریتم دقیق ۳-۱-۱-۰ کامل شد! استراحت کنید.`);
+                return;
+            }
+        }
+        runMetronomeStep();
+    }, 1000);
 }
 
 // Navigation
@@ -139,10 +253,14 @@ function switchTab(tabId) {
     const target = document.getElementById(`view-${tabId}`);
     if (target) target.classList.add('active');
 
+    if (tabId === 'progress') {
+        setTimeout(renderVolumeChart, 100);
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// SMART ENGINE 3: Daily Biofeedback & Readiness Score
+// Readiness UI
 function updateReadinessUI() {
     const scoreEl = document.getElementById('readiness-score-number');
     const textEl = document.getElementById('readiness-status-text');
@@ -194,7 +312,7 @@ function promptReadinessCheck() {
     }
 }
 
-// SMART ENGINE 4: Padel Load Balancer
+// Padel Balancer
 function togglePadelMatch() {
     STATE.padelMatchToday = !STATE.padelMatchToday;
     savePadel();
@@ -216,7 +334,7 @@ function togglePadelMatch() {
     renderNutrition();
 }
 
-// SMART ENGINE 1: Auto Progressive Overload & Workouts Rendering
+// Workouts Rendering
 function renderWorkouts() {
     const daysContainer = document.getElementById('days-selector-bar');
     const contentArea = document.getElementById('workout-exercises-area');
@@ -230,11 +348,10 @@ function renderWorkouts() {
 
     const workout = APEX_DATA.workouts.find(w => w.id === STATE.selectedWorkoutId) || APEX_DATA.workouts[0];
 
-    // Readiness adjustment note
     let readinessNotice = '';
     if (STATE.readiness.score < 65) {
         readinessNotice = `
-            <div style="background: rgba(244, 63, 94, 0.12); border: 1px solid var(--rose-500); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 12.5px; color: #fecdd3;">
+            <div style="background: rgba(244, 63, 94, 0.15); border: 1px solid var(--rose-500); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #ffffff;">
                 ⚠️ <b>تعدیل خودکار هوشمند (Readiness ${STATE.readiness.score}%):</b> ست‌های آخر به حالت تثبیت درآمدند. وزنه را سنگین‌تر نکنید و روی فاز منفی ۳ ثانیه‌ای با تمرکز بالا کار کنید.
             </div>
         `;
@@ -255,20 +372,20 @@ function renderWorkouts() {
             ${readinessNotice}
 
             <!-- Warmup bar -->
-            <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; color: var(--text-secondary);">
-                <b style="color: var(--emerald-400);">⚡ گرم کردن مفاصل:</b> 
+            <div style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; color: var(--text-secondary);">
+                <b style="color: var(--emerald-400);">⚡ پروتکل گرم کردن مفاصل:</b> 
                 ${workout.warmup.join(' | ')}
             </div>
 
             <!-- Volume Load Tracker -->
-            <div style="display: flex; justify-content: space-between; align-items: center; background: #06090e; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 16px; margin-bottom: 20px;">
-                <span style="font-size: 12.5px; color: var(--text-muted);">📊 تناژ عضلانی جابجا شده امروز (Volume Load):</span>
-                <span id="session-volume-load" style="font-size: 14px; font-weight: 900; color: var(--cyan-400); font-family: monospace;">
+            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 18px; margin-bottom: 20px;">
+                <span style="font-size: 13px; color: var(--text-muted); font-weight: 700;">📊 تناژ عضلانی جابجا شده امروز (Volume Load):</span>
+                <span id="session-volume-load" style="font-size: 16px; font-weight: 900; color: var(--cyan-400); font-family: monospace;">
                     ${calculateSessionVolume(workout)} کیلوگرم
                 </span>
             </div>
 
-            <!-- Exercises List with Progressive Overload Ghost Guides -->
+            <!-- Exercises List -->
             <div>
                 ${workout.exercises.map(ex => renderExerciseBox(ex)).join('')}
             </div>
@@ -301,14 +418,13 @@ function renderExerciseBox(ex) {
     const prev = STATE.previousSessions[ex.id] || { weight: ex.startingWeight, reps: 10 };
     let rows = '';
 
-    // Smart Progressive Overload Evaluation
     let allMaxReps = logged.length >= ex.sets && logged.every(s => s.done && parseInt(s.reps, 10) >= 10);
     let recommendationBadge = '';
     if (allMaxReps) {
         const nextW = (parseFloat(prev.weight) || 20) + (ex.progressionStep || 2.5);
         recommendationBadge = `
-            <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid var(--emerald-400); border-radius: 6px; padding: 6px 12px; font-size: 12px; color: var(--emerald-400); margin-bottom: 10px;">
-                🚀 <b>پیشنهاد اضافه‌بار هوشمند (Progressive Overload):</b> شما در تمام ست‌ها به سقف تکرار رسیدید! جلسه آینده وزنه را به <b>${nextW} کیلوگرم</b> برسانید یا ۱ ثانیه مکث در اوج کشش اضافه کنید.
+            <div style="background: rgba(16, 185, 129, 0.18); border: 1px solid var(--emerald-400); border-radius: 6px; padding: 8px 12px; font-size: 12.5px; color: #ffffff; margin-bottom: 12px;">
+                🚀 <b>پیشنهاد اضافه‌بار هوشمند:</b> شما در تمام ست‌ها به سقف تکرار رسیدید! جلسه آینده وزنه را به <b>${nextW} کیلوگرم</b> برسانید یا ۱ ثانیه مکث منفی اضافه کنید.
             </div>
         `;
     }
@@ -318,7 +434,7 @@ function renderExerciseBox(ex) {
         rows += `
             <tr>
                 <td style="font-weight: 800; color: var(--text-muted);">${i}</td>
-                <td style="font-size: 12.5px; color: var(--text-secondary);">${ex.reps}</td>
+                <td style="font-size: 13px; color: var(--text-secondary); font-weight: 700;">${ex.reps}</td>
                 <td>
                     <input type="number" step="0.5" placeholder="${prev.weight || 'کیلو'}" class="input-num" 
                         value="${item.weight || ''}" 
@@ -351,9 +467,8 @@ function renderExerciseBox(ex) {
                 </button>
             </div>
 
-            <!-- Ghost Guide Indicator -->
             <div class="ghost-guide-pill">
-                <span>📍 رکورد ثبت‌شده قبلی:</span>
+                <span>📍 رکورد جلسه قبل:</span>
                 <b>${prev.weight} کیلوگرم × ${prev.reps} تکرار</b>
             </div>
 
@@ -365,11 +480,11 @@ function renderExerciseBox(ex) {
                 <span class="spec-pill">فشار: ${ex.rir}</span>
             </div>
 
-            <div style="background: rgba(0,0,0,0.3); border-radius: 6px; padding: 8px 12px; font-size: 12.5px; color: #fbbf24; margin-bottom: 12px;">
+            <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; padding: 8px 12px; font-size: 12.5px; color: #fbbf24; margin-bottom: 12px;">
                 ⏱ <b>تحلیل ریتم ۳ ثانیه‌ای:</b> ${ex.tempoDetails}
             </div>
 
-            <div style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.7;">
+            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.75;">
                 ${ex.formCues.map(c => `• ${c}`).join('<br>')}
             </div>
 
@@ -401,7 +516,6 @@ function saveSetInput(exId, setNum, field, val) {
     item[field] = val;
     saveSets();
 
-    // If both weight and reps are set, update previous best
     if (item.weight && item.reps) {
         STATE.previousSessions[exId] = { weight: item.weight, reps: item.reps };
         savePrevious();
@@ -481,7 +595,7 @@ function updateTimerBtn() {
     }
 }
 
-// SMART ENGINE 2: Adaptive Nutrition & Recalibrator
+// Nutrition
 function renderNutrition() {
     const list = document.getElementById('meals-clean-list');
     const caloriesEl = document.getElementById('macro-cals-val');
@@ -504,7 +618,7 @@ function renderNutrition() {
         const isDone = STATE.mealsDone[m.id] || false;
         let padelBonus = '';
         if (m.id === 'meal_5' && STATE.padelMatchToday) {
-            padelBonus = '<span style="color: var(--emerald-400); font-weight: 800; font-size: 11.5px; margin-right: 8px;">(+۶۰ گرم برنج کته مازاد یا ۱ سیب‌زمینی تنوری جهت ریکاوری پدل)</span>';
+            padelBonus = '<span style="color: var(--emerald-400); font-weight: 800; font-size: 12px; margin-right: 8px;">(+۶۰ گرم برنج کته مازاد جهت ریکاوری پدل)</span>';
         }
 
         return `
@@ -528,7 +642,7 @@ function renderNutrition() {
                         </li>
                     `).join('')}
                 </ul>
-                <div style="font-size: 12px; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; border-right: 3px solid var(--cyan-400);">
+                <div style="font-size: 12.5px; color: var(--text-muted); background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 6px; border-right: 3px solid var(--cyan-400);">
                     💡 <b>نکته مربی:</b> ${m.coachNote}
                 </div>
             </div>
@@ -553,11 +667,9 @@ function runAdaptiveTDEECalibration() {
     const diff = start - latest;
 
     if (diff < 0.3) {
-        // Plateau
         STATE.adaptiveCaloriesOffset = -120;
         alert(`تحلیل متابولیسم هوشمند: روند کاهش وزن آهسته است (تغییر: ${diff.toFixed(1)} کیلو).\nسیستم ۱۲۰ کالری از کربوهیدرات برنج کم کرد تا چربی‌سوزی شتاب بگیرد.`);
     } else if (diff > 2.0) {
-        // Too fast, risk of losing 43.6kg SMM!
         STATE.adaptiveCaloriesOffset = +150;
         alert(`تحلیل متابولیسم هوشمند (سپر ضدریزش عضله): افت وزن سریع‌تر از حد استاندارد است!\nبرای محافظت از توده عضلانی ۴۳.۶ کیلویی، ۱۵۰ کالری کربوهیدرات اضافه شد.`);
     } else {
@@ -568,7 +680,93 @@ function runAdaptiveTDEECalibration() {
     renderNutrition();
 }
 
-// SMART ENGINE 5: In-App AI Co-Pilot Chat Engine
+// FEATURE 2: Canvas Strength & Volume Load Chart
+function renderVolumeChart() {
+    const canvas = document.getElementById('volume-chart-canvas');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const w = rect.width;
+    const h = rect.height;
+    const data = APEX_DATA.volumeHistory;
+
+    ctx.clearRect(0, 0, w, h);
+
+    const minV = 13000;
+    const maxV = 19000;
+    const stepX = (w - 60) / (data.length - 1);
+
+    // Draw grid lines
+    ctx.strokeStyle = '#2d3d57';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 4; i++) {
+        const y = 20 + (i * (h - 50) / 3);
+        ctx.beginPath();
+        ctx.moveTo(30, y);
+        ctx.lineTo(w - 20, y);
+        ctx.stroke();
+    }
+
+    // Points
+    const points = data.map((d, idx) => {
+        const x = 40 + (idx * stepX);
+        const norm = (d.volume - minV) / (maxV - minV);
+        const y = (h - 35) - (norm * (h - 60));
+        return { x, y, val: d.volume, label: d.week };
+    });
+
+    // Area gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+    grad.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, h - 35);
+    points.forEach((p) => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(points[points.length - 1].x, h - 35);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Line
+    ctx.beginPath();
+    points.forEach((p, idx) => {
+        if (idx === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+    });
+    ctx.strokeStyle = '#10b981';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Dots & Labels
+    points.forEach((p) => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px Vazirmatn, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(p.label, p.x, h - 12);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText(`${(p.val / 1000).toFixed(1)}k`, p.x, p.y - 10);
+    });
+}
+
+// AI Coach Chat
 function toggleAiModal() {
     const modal = document.getElementById('ai-coach-modal');
     if (modal) {
@@ -596,16 +794,16 @@ function askQuickPrompt(type) {
 
     if (type === 'chicken_sub') {
         question = 'امروز به سینه مرغ دسترسی ندارم، چی بخورم؟';
-        answer = 'امیر جان، برای دریافت ۵۵ گرم پروتئین ناهار بدون مرغ، یکی از موارد زیر را انتخاب کن:\n۱. ۱ قوطی تن ماهی در آب‌نمک (۱۸۰ گرم) + ۲ عدد سفیده تخم‌مرغ\n۲. ۲۰۰ گرم راسته گوساله بدون چربی\n۳. ۲۲۰ گرم فیله ماهی قزل‌آلا (کاهش ۱ قاشق روغن زیتون ناهار چون ماهی چربی مفید دارد)\n۴. ۷ عدد سفیده تخم‌مرغ پخته + ۱ پیمانه پروتئین وی.';
+        answer = 'امیر جان، برای دریافت ۵۵ گرم پروتئین ناهار بدون مرغ، یکی از موارد زیر را انتخاب کن:\n۱. ۱ قوطی تن ماهی در آب‌نمک (۱۸۰ گرم) + ۲ عدد سفیده تخم‌مرغ\n۲. ۲۰۰ گرم راسته گوساله بدون چربی\n۳. ۲۲۰ گرم فیله ماهی قزل‌آلا (کاهش ۱ قاشق روغن زیتون ناهار)\n۴. ۷ عدد سفیده تخم‌مرغ پخته + ۱ پیمانه پروتئین وی.';
     } else if (type === 'shoulder_pain') {
         question = 'شانه راستم بعد از پدل گرفته است؛ در حرکات سینه چه کنم؟';
-        answer = 'با توجه به سفتی پکتورالیس مینور راست ناشی از فورهند پدل:\n۱. هالتر صاف اکیداً ممنوع!\n۲. در پرس بالا سینه دمبل، زاویه آرنج را به جای ۹۰ درجه، ۴۵ درجه نسبت به پهلوها نگه دار (گریپ نیمه‌خنثی).\n۳. قبل از شروع جلسه، ۲ ست کشش پکتورالیس مینور در چهارچوب در (۳۰ ثانیه) اجرا کن.\n۴. اگر درد ادامه داشت، پرس دمبل را با پک‌دک دستگاه با دامنه کنترل‌شده جایگزین کن.';
+        answer = 'با توجه به سفتی پکتورالیس مینور راست ناشی از فورهند پدل:\n۱. هالتر صاف اکیداً ممنوع!\n۲. در پرس بالا سینه دمبل، زاویه آرنج را به جای ۹۰ درجه، ۴۵ درجه نسبت به پهلوها نگه دار (گریپ نیمه‌خنثی).\n۳. قبل از شروع جلسه، ۲ ست کشش پکتورالیس مینور در چهارچوب در (۳۰ ثانیه) اجرا کن.';
     } else if (type === 'padel_fuel') {
         question = '۱ ساعت مانده به بازی مسابقه‌ای پدل چی بخورم؟';
-        answer = 'بهترین سوخت انفجاری برای پدل:\n• ۱ عدد موز متوسط + ۱ قاشق عسل طبیعی + ۱ فنجان اسپرسو دبل شات + ۵۰۰ میلی‌لیتر آب با یک پنس نمک هیمالیا.\nاین ترکیب تا ۲ ساعت تمرکز دیداری و توان جهش‌های شما را در زمین بدون سنگینی معده تضمین می‌کند.';
+        answer = 'بهترین سوخت انفجاری برای پدل:\n• ۱ عدد موز متوسط + ۱ قاشق عسل طبیعی + ۱ فنجان اسپرسو دبل شات + ۵۰۰ میلی‌لیتر آب با یک پنس نمک هیمالیا.';
     } else if (type === 'left_calf') {
         question = 'چطور اختلاف ۲۰۰ گرمی ساق چپم را سریع‌تر پر کنم؟';
-        answer = 'طبق داده InBody پای چپت ۱۱.۸۴ کیلو و راست ۱۲.۰۱ کیلو است. فرمول طلایی:\n۱. در تمرین روز ۱ و ۴، تمام ست‌های ساق را اول با پای چپ شروع کن.\n۲. در انتهای ست‌ها، ۱ ست اضافه ۱۵ تکراری با مکث ۳ ثانیه کامل در عمیق‌ترین نقطه کشش فقط برای پای چپ بزن.\nاین کار باعث ترشح فاکتورهای رشد موضعی (IGF-1) در تارهای ساق چپ می‌شود.';
+        answer = 'طبق داده InBody پای چپت ۱۱.۸۴ کیلو و راست ۱۲.۰۱ کیلو است. فرمول طلایی:\n۱. در تمرین روز ۱ و ۴، تمام ست‌های ساق را اول با پای چپ شروع کن.\n۲. از تکنیک Myo-Reps در ست آخر فقط برای پای چپ استفاده کن (۱۲ تکرار تا خستگی + ۵ تنفس + ۳ تکرار + ۵ تنفس + ۳ تکرار).';
     }
 
     sendChatMessage(question, answer);
@@ -618,8 +816,7 @@ function sendUserMessage() {
     const userText = input.value.trim();
     input.value = '';
 
-    // Generate Contextual AI Response
-    let reply = `امیر جان، با توجه به قد ۱۸۴، وزن ۸۸ و هدف رسیدن به ۸۳ کیلو با حفظ ۴۳.۶ کیلو عضله اسکلتی:\nدر خصوص «${userText}»، توصیه علمی مربیگری این است که اولویت را بر حفظ شدت تمرین و ریکاوری خواب دوفازی بگذاری. در روزهای بازی پدل حتماً هیدراتاسیون و سدیم را بالا نگه دار تا مفاصلت خشک کار نکنند.`;
+    let reply = `امیر جان، با توجه به قد ۱۸۴، وزن ۸۸ و هدف رسیدن به ۸۳ کیلو با حفظ ۴۳.۶ کیلو عضله اسکلتی:\nدر خصوص «${userText}»، توصیه علمی مربیگری این است که اولویت را بر حفظ شدت تمرین و ریکاوری خواب دوفازی بگذاری. در روزهای بازی پدل حتماً هیدراتاسیون و نوشیدنی حین تمرین را مصرف کن.`;
 
     if (userText.includes('مرغ') || userText.includes('غذا') || userText.includes('برنج')) {
         reply = 'در مورد رژیم: ثبات برنج کته و پروتئین خالص کلید کار است. اگر یک روز اشتها نداشتی، فیله مرغ را چرخ کن یا با ماست ایسلندی مصرف کن، اما هرگز پروتئین روزانه را به زیر ۱۹۰ گرم نرسان.';
@@ -647,10 +844,10 @@ function renderAsymmetries() {
     if (!c) return;
 
     c.innerHTML = APEX_DATA.athlete.asymmetries.map(a => `
-        <div class="asymmetry-card" style="background: #0b0f17; border-right: 4px solid var(--amber-500); border-radius: 12px; padding: 16px 20px; margin-bottom: 14px; border: 1px solid var(--border-color); border-right-width: 4px;">
-            <div style="font-size: 15px; font-weight: 800; color: #fbbf24; margin-bottom: 6px;">⚠️ ${a.area}</div>
-            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 6px;"><b>تحلیل بیومکانیک:</b> ${a.problem}</div>
-            <div style="font-size: 12.5px; color: var(--emerald-400); font-weight: 700;"><b>راهکار قطعی در این برنامه:</b> ${a.solution}</div>
+        <div style="background: var(--bg-surface); border-right: 4px solid var(--amber-500); border-radius: 12px; padding: 16px 20px; margin-bottom: 14px; border: 1px solid var(--border-color); border-right-width: 4px;">
+            <div style="font-size: 15.5px; font-weight: 800; color: #fbbf24; margin-bottom: 6px;">⚠️ ${a.area}</div>
+            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; line-height: 1.75;"><b>تحلیل بیومکانیک:</b> ${a.problem}</div>
+            <div style="font-size: 13px; color: var(--emerald-400); font-weight: 800; line-height: 1.75;"><b>راهکار قطعی در این برنامه:</b> ${a.solution}</div>
         </div>
     `).join('');
 }
@@ -680,14 +877,23 @@ function renderWeights() {
     if (!list) return;
 
     list.innerHTML = STATE.weightHistory.map(w => `
-        <li style="display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border-color); font-size: 13.5px;">
+        <li style="display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border-color); font-size: 14px;">
             <div>
                 <b style="color: #ffffff;">${w.weight} کیلوگرم</b>
-                <span style="color: var(--text-muted); font-size: 12px; margin-right: 8px;">(${w.note})</span>
+                <span style="color: var(--text-muted); font-size: 12.5px; margin-right: 8px;">(${w.note})</span>
             </div>
-            <span style="color: var(--cyan-400); font-family: monospace;">${w.date}</span>
+            <span style="color: var(--cyan-400); font-family: monospace; font-weight: 700;">${w.date}</span>
         </li>
     `).join('');
+}
+
+// Register PWA Service Worker
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch((err) => {
+            console.log('SW registration error:', err);
+        });
+    });
 }
 
 // Boot

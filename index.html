@@ -2,13 +2,20 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APEX ATHLETE | پلتفرم هوشمند فیزیولوژی، هایپرتروفی و پدل امیر</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>APEX ATHLETE | پلتفرم هوشمند فیزیولوژی و هایپرتروفی امیر</title>
     
-    <!-- Google Fonts: Vazirmatn -->
+    <!-- PWA Settings -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#10b981">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon.svg">
+    
+    <!-- Google Fonts: Vazirmatn & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;900&family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="style.css">
 </head>
@@ -21,13 +28,13 @@
             <div class="brand-section">
                 <div class="brand-logo">⚡</div>
                 <div class="brand-title">
-                    <h1>APEX ATHLETE <span style="font-size: 11px; padding: 2px 8px; border-radius: 99px; background: rgba(16, 185, 129, 0.2); color: var(--emerald-400); border: 1px solid rgba(16, 185, 129, 0.4);">AI Powered</span></h1>
+                    <h1>APEX ATHLETE <span style="font-size: 11px; padding: 3px 8px; border-radius: 99px; background: rgba(16, 185, 129, 0.2); color: var(--emerald-400); border: 1px solid rgba(16, 185, 129, 0.4); font-weight: 800;">PWA Active</span></h1>
                     <p>سیستم هوشمند فیزیولوژی، تنظیم تطبیقی اضافه‌بار و مربیگری اختصاصی امیر</p>
                 </div>
             </div>
             <div class="header-badges">
                 <span class="badge-pill">امتیاز اینبادی: ۹۲ از ۱۰۰</span>
-                <span class="badge-pill cyan">توده عضلانی: ۴۳.۶ کیلوگرم</span>
+                <span class="badge-pill cyan">عضله اسکلتی: ۴۳.۶ کیلو</span>
             </div>
         </header>
 
@@ -55,7 +62,7 @@
             </div>
         </section>
 
-        <!-- SMART ENGINE 3: Daily Biofeedback & Readiness Bar -->
+        <!-- Daily Biofeedback & Readiness Bar -->
         <div class="readiness-banner">
             <div class="readiness-score-box">
                 <div class="readiness-circle" id="readiness-score-number">92%</div>
@@ -69,7 +76,7 @@
             </button>
         </div>
 
-        <!-- SMART ENGINE 4: Padel Load Balancer Bar -->
+        <!-- Padel Load Balancer Bar -->
         <div class="padel-balancer-banner">
             <div class="padel-info">
                 <span class="padel-icon">🎾</span>
@@ -86,29 +93,48 @@
         <!-- Navigation Bar -->
         <nav class="nav-bar">
             <button class="nav-tab active" data-tab="workout" onclick="switchTab('workout')">
-                🏋️‍♂️ تمرین و اضافه‌بار خودکار
+                🏋️‍♂️ تمرین و ریتم ۳ ثانیه‌ای
             </button>
             <button class="nav-tab" data-tab="nutrition" onclick="switchTab('nutrition')">
-                🍗 رژیم تطبیقی و کالری
+                🍗 رژیم تطبیقی و نوشیدنی تمرین
             </button>
             <button class="nav-tab" data-tab="asymmetry" onclick="switchTab('asymmetry')">
-                ⚖️ اصلاح ناهماهنگی شانه و ساق چپ
+                ⚖️ اصلاح ناهماهنگی شانه و ساق
             </button>
             <button class="nav-tab" data-tab="recovery" onclick="switchTab('recovery')">
                 🌙 خواب دوفازی و مکمل‌ها
             </button>
             <button class="nav-tab" data-tab="progress" onclick="switchTab('progress')">
-                📊 پایش وزن ناشتا
+                📊 نمودار قدرت و وزن
             </button>
         </nav>
 
         <!-- VIEW: WORKOUT -->
         <section id="view-workout" class="view-section active">
             
+            <!-- FEATURE 1: Audio Tempo Metronome Bar -->
+            <div class="metronome-banner">
+                <div class="metronome-info">
+                    <span style="font-size: 24px;">🎵</span>
+                    <div>
+                        <h4 style="font-size: 14.5px; font-weight: 800; color: #ffffff;">مترونوم صوتی ریتم ۳-۱-۱-۰ (هدایت هوشمند ثانیه‌ها)</h4>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                            پخش بوق‌های صوتی زنده برای ۳ ثانیه فاز منفی، ۱ ثانیه مکث در کشش و ۱ ثانیه بالا آمدن
+                        </p>
+                    </div>
+                </div>
+                <div class="metronome-controls">
+                    <div class="metronome-ticker-pill" id="metronome-status-pill">آماده برای ست جدید</div>
+                    <button class="btn-metronome" id="btn-metronome-toggle" onclick="toggleMetronome()">
+                        شروع مترونوم ۳-۱-۱-۰
+                    </button>
+                </div>
+            </div>
+
             <!-- Rest Timer Banner -->
             <div class="rest-timer-banner">
                 <div style="display: flex; align-items: center; gap: 14px;">
-                    <span style="font-size: 13.5px; color: #cbd5e1;">⏱ تایمر هوشمند استراحت مفاصل:</span>
+                    <span style="font-size: 13.5px; color: #cbd5e1; font-weight: 700;">⏱ تایمر هوشمند استراحت مفاصل:</span>
                     <div class="timer-digits" id="timer-val">01:30</div>
                 </div>
                 <div class="timer-btns">
@@ -134,7 +160,6 @@
         <!-- VIEW: NUTRITION -->
         <section id="view-nutrition" class="view-section">
             
-            <!-- SMART ENGINE 2: Adaptive Macros Row -->
             <div class="nutrition-macros-row">
                 <div class="macro-card">
                     <div class="t">انرژی کل روزانه</div>
@@ -154,15 +179,14 @@
                 </div>
             </div>
 
-            <!-- Adaptive Recalibration Banner -->
             <div class="adaptive-recal-box">
                 <div>
-                    <h4 style="font-size: 14px; font-weight: 800; color: #fbbf24;">⚡ تنظیم خودکار متابولیسم (مشابه متد MacroFactor)</h4>
-                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                    <h4 style="font-size: 14.5px; font-weight: 800; color: #fbbf24;">⚡ تنظیم خودکار متابولیسم (مشابه متد MacroFactor)</h4>
+                    <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 2px;">
                         سیستم شیب هفتگی وزن شما را تحلیل کرده و در صورت استپ یا افت سریع، کالری را تنظیم می‌کند.
                     </p>
                 </div>
-                <button class="btn-timer" style="background: var(--amber-500); color: #000; font-weight: 800;" onclick="runAdaptiveTDEECalibration()">
+                <button class="btn-timer" style="background: var(--amber-500); color: #000; font-weight: 900; border: none; padding: 8px 18px;" onclick="runAdaptiveTDEECalibration()">
                     تحلیل روند و بازتنظیم هوشمند کالری
                 </button>
             </div>
@@ -170,7 +194,7 @@
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">🍽 برنامه غذایی واقعی و در دسترس (تیک بزنید تا ثبت شود)</h3>
-                    <span class="badge-pill">بدون موارد پیچیده</span>
+                    <span class="badge-pill">شامل نوشیدنی حین تمرین</span>
                 </div>
                 <div id="meals-clean-list">
                     <!-- Injected by app.js -->
@@ -195,7 +219,7 @@
                     <!-- Injected by app.js -->
                 </div>
 
-                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 14px 18px; margin-top: 16px; font-size: 13px; color: #ffffff;">
+                <div style="background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 8px; padding: 14px 18px; margin-top: 16px; font-size: 13.5px; color: #ffffff;">
                     ✅ <b>دستور مربی در باشگاه:</b> در تمام حرکات دمبل، همیشه دست یا پای ضعیف‌تر (ساق چپ / سینه راست) را معیار تعداد تکرار قرار دهید. هرگز با دست یا پای قوی‌تر تکرار اضافی نزنید تا تراز کامل برقرار شود.
                 </div>
             </div>
@@ -210,15 +234,15 @@
                 </div>
                 
                 <div style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.8;">
-                    <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 12px 16px; margin-bottom: 10px;">
+                    <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 10px;">
                         <b style="color: #ffffff;">۱. فاز اول خواب (۲۳:۴۵ الی ۰۴:۰۰ - حدود ۴ ساعت و ۱۵ دقیقه):</b><br>
-                        بخش عمده خواب عمیق Slow-Wave و اوج ترشح هورمون رشد (GH). قطع نورهای سفید خانه از ساعت ۲۲:۰۰ و تنظیم دمای اتاق روی ۱۹-۲۰ درجه.
+                        بخش عمده خواب عمیق Slow-Wave و اوج ترشح هورمون رشد (GH). قطع نورهای سفید خانه از ساعت ۲۲:۰۰ و تنظیم دمای اتاق روی ۱۹-۲۰ درجه. توصیه: استفاده از چسب ملایم لب (Mouth Tape) جهت افزایش نیتریک اکسید عروقی.
                     </div>
-                    <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 12px 16px; margin-bottom: 10px;">
-                        <b style="color: var(--amber-500);">۲. بازه مناجات و آرامش روانی (۰۴:۰۰ الی ۰۶:۰۰):</b><br>
-                        نورهای ملایم زرد/آباژور، پرهیز مطلق از نگاه کردن به صفحه موبایل و اخبار، و نوشیدن آب ولرم با لیمو.
+                    <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; margin-bottom: 10px;">
+                        <b style="color: var(--amber-400);">۲. بازه مناجات و آرامش روانی (۰۴:۰۰ الی ۰۶:۰۰):</b><br>
+                        نورهای ملایم زرد/آباژور، پرهیز مطلق از نگاه کردن به صفحه موبایل و اخبار، نوشیدن آب ولرم با لیمو، و ۱۰ دقیقه تنفس آرامش عضلانی (NSDR) قبل از خواب دوم.
                     </div>
-                    <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 12px 16px;">
+                    <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px;">
                         <b style="color: var(--emerald-400);">۳. فاز دوم خواب (۰۶:۰۰ الی ۰۷:۴۵ - ۱ ساعت و ۴۵ دقیقه):</b><br>
                         ۱ چرخه کامل REM برای یادگیری حرکتی تکنیک‌های پدل. استفاده حتمی از چشم‌بند خواب برای جلوگیری از تابش نور خورشید.
                     </div>
@@ -231,10 +255,10 @@
                     <span class="badge-pill">اثبات‌شده علمی</span>
                 </div>
                 <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.8;">
-                    <p>• <b>کراتین مونوهیدرات:</b> ۵ گرم روزانه همراه با ناهار (حفظ پر بودن عضلات و جلوگیری از افت توان انفجاری در پدل).</p>
+                    <p>• <b>کراتین مونوهیدرات:</b> ۵ گرم در بطری آب حین تمرین یا همراه ناهار.</p>
                     <p>• <b>پروتئین وی ایزوله:</b> ۱ اسکوپ بلافاصله بعد تمرین یا عصرانه با سیب‌زمینی.</p>
-                    <p>• <b>امگا ۳ غلیظ:</b> ۲۰۰۰ میلی‌گرم با ناهار (روغن‌کاری مفاصل شانه و زانو در برابر ضربات پدل).</p>
-                    <p>• <b>منیزیم بایس‌گلیسینات:</b> ۳۰۰ میلی‌گرم قبل از خواب اول برای ریلکسیشن عضلات.</p>
+                    <p>• <b>امگا ۳ غلیظ:</b> ۲۰۰۰ میلی‌گرم با ناهار (مهار التهاب مفاصل و تاندون‌ها در پدل).</p>
+                    <p>• <b>منیزیم بایس‌گلیسینات + زینک:</b> ۳۰۰ میلی‌گرم منیزیم + ۳۰ میلی‌گرم روی قبل از خواب اول.</p>
                     <p>• <b>ویتامین D3+K2:</b> همراه با صبحانه تخم‌مرغ.</p>
                 </div>
             </div>
@@ -242,6 +266,23 @@
 
         <!-- VIEW: PROGRESS -->
         <section id="view-progress" class="view-section">
+            
+            <!-- FEATURE 2: Strength & Volume Load Chart -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">📈 نمودار رشد تناژ و قدرت عضلانی (Volume Load Curve)</h3>
+                    <span class="badge-pill">شاخص اصلی هایپرتروفی</span>
+                </div>
+                <div style="font-size: 12.5px; color: var(--text-muted);">
+                    نمایش حاصل‌ضرب مجموع وزنه‌ها در تکرارها در طول هفته‌ها (پیشرفت مستمر بدون افت عضله)
+                </div>
+                <div class="chart-container">
+                    <div class="canvas-wrapper">
+                        <canvas id="volume-chart-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">⚖️ ثبت وزن ناشتا (صبح‌ها بعد از دستشویی)</h3>
@@ -261,7 +302,7 @@
 
     </div>
 
-    <!-- SMART ENGINE 5: Floating In-App AI Coach Trigger -->
+    <!-- Floating AI Coach Trigger -->
     <button class="ai-coach-trigger-btn" onclick="toggleAiModal()">
         <span>🤖</span>
         <span>مربی هوش مصنوعی</span>
@@ -312,7 +353,7 @@
             <span>🌙 خواب</span>
         </button>
         <button class="mobile-nav-btn" data-tab="progress" onclick="switchTab('progress')">
-            <span>📊 وزن</span>
+            <span>📊 نمودار</span>
         </button>
     </div>
 
