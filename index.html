@@ -65,6 +65,68 @@
             </div>
         </section>
 
+        <!-- Today's Command Center (داشبورد تجمیعی امروز) -->
+        <section class="today-command-center">
+            <div class="today-cmd-header">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 18px;">⚡</span>
+                    <h3 style="font-size: 15px; font-weight: 900; color: #ffffff;">مرکز فرماندهی امروز (Today's Command Center)</h3>
+                </div>
+                <span class="badge-pill" id="today-date-badge">امروز</span>
+            </div>
+
+            <div class="today-cards-grid">
+                <!-- Card 1: Today's Workout & Gym Mode Trigger -->
+                <div class="today-cmd-card workout">
+                    <div class="today-card-meta">
+                        <span class="today-card-tag">🏋️‍♂️ تمرین در نوبت</span>
+                        <h4 id="today-cmd-workout-name">روز ۱: پایین‌تنه قدرتی و ساق چپ</h4>
+                        <p id="today-cmd-workout-desc">۲۵ ست سخت • هک‌اسکوات، RDL و دراپ‌ست</p>
+                    </div>
+                    <button class="btn-launch-gym" onclick="openGymMode()">
+                        🚀 ورود به حالت تمرین باشگاه (Gym Mode)
+                    </button>
+                </div>
+
+                <!-- Card 2: Today's Supplements Summary -->
+                <div class="today-cmd-card supplements">
+                    <div class="today-card-meta">
+                        <span class="today-card-tag">💊 وضعیت مکمل‌های روز</span>
+                        <h4 id="today-cmd-supps-status">۰ از ۵ مورد مصرف شده</h4>
+                        <p id="today-cmd-supps-next">مورد بعدی در انتظار: ویتامین D3</p>
+                    </div>
+                    <button class="btn-today-action" onclick="switchTab('supplements')">
+                        دیدن و ثبت تیک ✓
+                    </button>
+                </div>
+
+                <!-- Card 3: Interactive Water / Hydration Tracker -->
+                <div class="today-cmd-card hydration">
+                    <div class="today-card-meta">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="today-card-tag">💧 ترکر هوشمند آب روزانه</span>
+                            <span id="water-target-label" style="font-size: 11.5px; color: var(--cyan-400); font-weight: 700;">هدف: ۳.۸ لیتر</span>
+                        </div>
+                        <h4 id="water-current-display">۰.۰ / ۳.۸ <span style="font-size: 13px; color: var(--text-muted);">لیتر</span></h4>
+                        <div class="water-progress-bar-bg">
+                            <div class="water-progress-bar-fill" id="water-progress-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div class="water-quick-buttons">
+                        <button class="btn-water-add" onclick="addWater(0.25)" title="یک لیوان آب">
+                            +۲۵۰cc 🥛
+                        </button>
+                        <button class="btn-water-add" onclick="addWater(0.5)" title="یک شیکر آب">
+                            +۵۰۰cc 🥤
+                        </button>
+                        <button class="btn-water-reset" onclick="resetWater()" title="بازنشانی آب">
+                            🔄
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Daily Biofeedback & Readiness Bar -->
         <div class="readiness-banner">
             <div class="readiness-score-box">
@@ -131,6 +193,65 @@
 
         <!-- VIEW: WORKOUT -->
         <section id="view-workout" class="view-section active">
+
+            <!-- Today's Command Center & Daily Focus -->
+            <div class="today-command-center" id="today-command-center">
+                <div class="today-cmd-header">
+                    <div>
+                        <h3 style="font-size: 17px; font-weight: 900; color: #ffffff;">⚡ مرکز کنترل تمرین و تغذیه امروز</h3>
+                        <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 2px;">دسترسی سریع، حالت تمرین باشگاهی (Gym Mode) و پایش هیدراتاسیون</p>
+                    </div>
+                    <button class="btn-launch-gym" style="width: auto; padding: 8px 18px;" onclick="openGymMode()">
+                        🏋️‍♂️ ورود به حالت تمرین باشگاه (Gym Mode)
+                    </button>
+                </div>
+
+                <div class="today-cards-grid">
+                    <!-- Card 1: Workout of the Day -->
+                    <div class="today-cmd-card workout">
+                        <div class="today-card-meta">
+                            <span class="today-card-tag">تمرین انتخاب شده</span>
+                            <h4 id="today-cmd-workout-title">سینه، سرشانه قدامی و زیربغل</h4>
+                            <p id="today-cmd-workout-subtitle">۶ حرکت هایپرتروفی • ریتم ۳ ثانیه‌ای منفی</p>
+                        </div>
+                        <button class="btn-launch-gym" onclick="openGymMode()">
+                            ⚡ اجرای متمرکز بدون حواس‌پرتی
+                        </button>
+                    </div>
+
+                    <!-- Card 2: Supplements & Pills -->
+                    <div class="today-cmd-card supplements">
+                        <div class="today-card-meta">
+                            <span class="today-card-tag">مکمل و قرص‌ها</span>
+                            <h4 id="today-cmd-supp-title">پایش روزانه قرص‌ها</h4>
+                            <p id="today-cmd-supp-subtitle">۰ از ۵ مکمل تیک خورده است</p>
+                        </div>
+                        <button class="btn-today-action" onclick="switchTab('supplements')">
+                            💊 مشاهده چک‌لیست و تیک ✓
+                        </button>
+                    </div>
+
+                    <!-- Card 3: Hydration Tracker -->
+                    <div class="today-cmd-card hydration">
+                        <div class="today-card-meta">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span class="today-card-tag">هیدراتاسیون و مصرف آب</span>
+                                <span style="font-size: 12px; font-weight: 800; color: var(--cyan-400);" id="water-drank-text">۰ / ۳.۸ لیتر</span>
+                            </div>
+                            <h4 id="water-status-headline">💧 آب مصرفی امروز</h4>
+                            <div class="water-progress-bar-bg">
+                                <div class="water-progress-bar-fill" id="water-progress-fill" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                        <div class="water-quick-buttons">
+                            <button class="btn-water-add" onclick="addWater(250)">+۲۵۰ ml</button>
+                            <button class="btn-water-add" onclick="addWater(500)">+۵۰۰ ml</button>
+                            <button class="btn-water-add" onclick="addWater(1000)">+۱ لیتر</button>
+                            <button class="btn-water-reset" title="ریست آب امروز" onclick="resetWater()">🔄</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
             <!-- FEATURE 1: Audio Tempo Metronome Bar -->
             <div class="metronome-banner">
@@ -459,6 +580,171 @@
                     </button>
                     <button class="btn-timer" style="padding: 12px; background: rgba(244, 63, 94, 0.2); border-color: var(--rose-500); color: #fb7185;" onclick="resetAllAppData()">
                         🔄 بازنشانی کلی
+                    </button>
+                </div>
+                <button class="btn-timer" style="padding: 10px; background: rgba(56, 189, 248, 0.16); border-color: var(--cyan-400); color: var(--cyan-400); width: 100%; margin-top: 4px;" onclick="closeProfileModal(); openOnboardingWizard();">
+                    ✨ راه‌اندازی گام‌به‌گام ورزشکار جدید (ویزارد ۳ مرحله‌ای)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACTIVE GYM MODE OVERLAY (حالت تمرین متمرکز باشگاه بدون اسکرول) -->
+    <div class="gym-mode-overlay" id="gym-mode-modal" style="display: none;">
+        <div class="gym-mode-header">
+            <div class="gym-mode-title-col">
+                <span class="gym-mode-tag" id="gym-mode-day-tag">روز ۱: پایین‌تنه قدرتی</span>
+                <h2 id="gym-mode-session-title">هک‌اسکوات سنگین</h2>
+            </div>
+            <div class="gym-mode-controls-col">
+                <span class="wake-lock-pill" id="wake-lock-status-pill">💡 صفحه روشن</span>
+                <button class="btn-voice-toggle" id="btn-voice-coach-toggle" onclick="toggleVoiceCoach()" title="راهنمای صوتی در هندزفری">
+                    🔊 صدای مربی: فعال
+                </button>
+                <button class="btn-exit-gym" onclick="closeGymMode()">✕ خروج</button>
+            </div>
+        </div>
+
+        <!-- Overall Session Progress Bar -->
+        <div class="gym-session-progress">
+            <div class="gym-progress-header">
+                <span id="gym-session-progress-text">ست ۱ از ۲۵ ست کل جلسه (۴٪)</span>
+                <span id="gym-exercise-counter">حرکت ۱ از ۶</span>
+            </div>
+            <div class="gym-progress-track">
+                <div class="gym-progress-bar" id="gym-progress-bar-fill" style="width: 4%;"></div>
+            </div>
+        </div>
+
+        <!-- Main Focus Card -->
+        <div class="gym-focus-card" id="gym-focus-card">
+            <!-- Injected dynamically by app.js -->
+        </div>
+
+        <!-- Navigation Between Exercises Footer -->
+        <div class="gym-nav-footer">
+            <button class="btn-gym-nav" id="btn-gym-prev-ex" onclick="gymModePrevExercise()">
+                ◀ حرکت قبلی
+            </button>
+            <button class="btn-gym-rest-trigger" onclick="setTimer(90)">
+                ⏱ استراحت اختیاری (۹۰s)
+            </button>
+            <button class="btn-gym-nav" id="btn-gym-next-ex" onclick="gymModeNextExercise()">
+                حرکت بعدی ▶
+            </button>
+        </div>
+    </div>
+
+    <!-- 3-Step Onboarding Wizard Modal for New Users -->
+    <div class="ai-modal-overlay" id="onboarding-wizard-modal" style="display: none;">
+        <div class="ai-modal-card wizard-card">
+            <div class="wizard-header">
+                <div class="wizard-step-indicators">
+                    <span class="wizard-step-dot active" id="wiz-dot-1">۱. هویت</span>
+                    <span class="wizard-step-line"></span>
+                    <span class="wizard-step-dot" id="wiz-dot-2">۲. آنتروپومتری</span>
+                    <span class="wizard-step-line"></span>
+                    <span class="wizard-step-dot" id="wiz-dot-3">۳. هدف ورزشی</span>
+                </div>
+                <button class="ai-close-btn" onclick="closeOnboardingWizard()">✕</button>
+            </div>
+
+            <!-- Step 1: Identity -->
+            <div class="wizard-step-pane active" id="wiz-step-1">
+                <div class="wizard-pane-hero">
+                    <span style="font-size: 36px;">👋</span>
+                    <h3>خوش آمدید! اسم شما چیست؟</h3>
+                    <p>سیستم تمرینی و رژیم غذایی بر اساس مشخصات فردی شما کالیبره خواهد شد.</p>
+                </div>
+                <div class="wizard-form-group">
+                    <label>نام و نام خانوادگی:</label>
+                    <input type="text" id="wiz-input-name" class="ai-chat-input" placeholder="مثلاً: امیر، آرش، رضا...">
+                </div>
+                <div class="wizard-form-group">
+                    <label>سن شما:</label>
+                    <input type="number" id="wiz-input-age" class="ai-chat-input" placeholder="مثلاً: 28">
+                </div>
+                <button class="btn-wizard-next" onclick="goToWizardStep(2)">
+                    مرحله بعد: قد و وزن ➔
+                </button>
+            </div>
+
+            <!-- Step 2: Body Metrics -->
+            <div class="wizard-step-pane" id="wiz-step-2" style="display: none;">
+                <div class="wizard-pane-hero">
+                    <span style="font-size: 36px;">⚖️</span>
+                    <h3>قد و وزن فعلی شما چقدر است؟</h3>
+                    <p>این مقادیر پایه محاسبه کالری متابولیک (BMR) و پروتئین مورد نیاز خواهند بود.</p>
+                </div>
+                <div class="wizard-grid-2">
+                    <div class="wizard-form-group">
+                        <label>قد (سانتی‌متر):</label>
+                        <input type="number" id="wiz-input-height" class="ai-chat-input" placeholder="مثلاً: 184">
+                    </div>
+                    <div class="wizard-form-group">
+                        <label>وزن فعلی (کیلوگرم):</label>
+                        <input type="number" step="0.5" id="wiz-input-weight" class="ai-chat-input" placeholder="مثلاً: 88.0">
+                    </div>
+                </div>
+                <div class="wizard-grid-2">
+                    <div class="wizard-form-group">
+                        <label>وزن هدف (کیلوگرم):</label>
+                        <input type="number" step="0.5" id="wiz-input-target-weight" class="ai-chat-input" placeholder="مثلاً: 83.0">
+                    </div>
+                    <div class="wizard-form-group">
+                        <label>توده عضله اسکلتی SMM (اختیاری):</label>
+                        <input type="number" step="0.5" id="wiz-input-smm" class="ai-chat-input" placeholder="مثلاً: 43.6">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-wizard-back" onclick="goToWizardStep(1)">◀ قبلی</button>
+                    <button class="btn-wizard-next" style="flex: 1;" onclick="goToWizardStep(3)">مرحله بعد: انتخاب هدف ➔</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Goal Selection -->
+            <div class="wizard-step-pane" id="wiz-step-3" style="display: none;">
+                <div class="wizard-pane-hero">
+                    <span style="font-size: 36px;">🎯</span>
+                    <h3>هدف اصلی و سبک ورزشی شما</h3>
+                    <p>انتخاب کنید تا پارامترهای کالری، ماکروها و سیستم تمرین تنظیم شوند:</p>
+                </div>
+                <div class="wizard-goals-select">
+                    <label class="wizard-goal-option">
+                        <input type="radio" name="wiz_goal" value="hypertrophy" checked>
+                        <div class="goal-box">
+                            <span class="goal-icon">💪</span>
+                            <div>
+                                <b>هایپرتروفی و حجم عضلانی خشک (پیش‌فرض)</b>
+                                <p>حداکثر رشد عضله، تمرین سنگین ۲۴-۲۸ ست و پروتئین بالا (۲.۲g/kg)</p>
+                            </div>
+                        </div>
+                    </label>
+                    <label class="wizard-goal-option">
+                        <input type="radio" name="wiz_goal" value="padel_hybrid">
+                        <div class="goal-box">
+                            <span class="goal-icon">🎾</span>
+                            <div>
+                                <b>ورزشکار هیبرید پدل و بدنسازی</b>
+                                <p>حفظ عضله با چربی‌سوزی، توان انفجاری و پروتکل کاردیو Norwegian 4x4</p>
+                            </div>
+                        </div>
+                    </label>
+                    <label class="wizard-goal-option">
+                        <input type="radio" name="wiz_goal" value="fat_loss">
+                        <div class="goal-box">
+                            <span class="goal-icon">🔥</span>
+                            <div>
+                                <b>کات و تفکیک سریع بدون افت عضله</b>
+                                <p>کسر هوشمند کالری و تمرکز بر ریتم ۳ ثانیه‌ای جهت حفظ بافت عضلانی</p>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 14px;">
+                    <button class="btn-wizard-back" onclick="goToWizardStep(2)">◀ قبلی</button>
+                    <button class="btn-wizard-finish" onclick="finishOnboarding()">
+                        🚀 ثبت نهایی و ساخت برنامه اختصاصی
                     </button>
                 </div>
             </div>

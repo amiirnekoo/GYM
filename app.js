@@ -20,6 +20,15 @@ const STATE = {
     padelMatchToday: false,
     adaptiveCaloriesOffset: 0,
     supplementsDone: {},
+    waterDrank: 0,
+    waterGoal: 3800,
+    voiceCoach: true,
+    wakeLockSentinel: null,
+    gymMode: {
+        active: false,
+        exIdx: 0,
+        setNum: 1
+    },
     metronome: {
         isRunning: false,
         timerId: null,
@@ -67,6 +76,66 @@ function saveSupplements() {
     localStorage.setItem('apex_supps_date', getTodayDateString());
 }
 
+// Water Tracker Storage & Functions
+function initWaterStorage() {
+    try {
+        const today = getTodayDateString();
+        const storedDate = localStorage.getItem('apex_water_date');
+        const storedDrank = localStorage.getItem('apex_water_drank');
+
+        if (storedDate === today && storedDrank !== null) {
+            STATE.waterDrank = parseInt(storedDrank, 10) || 0;
+        } else {
+            STATE.waterDrank = 0;
+            localStorage.setItem('apex_water_date', today);
+            saveWater();
+        }
+    } catch (e) {
+        STATE.waterDrank = 0;
+    }
+    renderWaterTracker();
+}
+
+function saveWater() {
+    localStorage.setItem('apex_water_drank', STATE.waterDrank);
+    localStorage.setItem('apex_water_date', getTodayDateString());
+}
+
+function addWater(amount) {
+    STATE.waterDrank = Math.min(6000, STATE.waterDrank + amount);
+    saveWater();
+    playChime();
+    renderWaterTracker();
+}
+
+function resetWater() {
+    if (confirm('آیا مایلید میزان آب مصرفی امروز ریست شود؟')) {
+        STATE.waterDrank = 0;
+        saveWater();
+        renderWaterTracker();
+    }
+}
+
+function renderWaterTracker() {
+    const textEl = document.getElementById('water-drank-text');
+    const fillEl = document.getElementById('water-progress-fill');
+    const headlineEl = document.getElementById('water-status-headline');
+
+    const pct = Math.min(100, Math.round((STATE.waterDrank / STATE.waterGoal) * 100));
+    const drankLiters = (STATE.waterDrank / 1000).toFixed(1);
+    const goalLiters = (STATE.waterGoal / 1000).toFixed(1);
+
+    if (textEl) textEl.innerText = `${drankLiters} / ${goalLiters} لیتر (${pct}٪)`;
+    if (fillEl) fillEl.style.width = `${pct}%`;
+    if (headlineEl) {
+        if (pct >= 100) {
+            headlineEl.innerHTML = `💧 آب مصرفی امروز: <span style="color: var(--emerald-400);">هدف کامل شد! ✓</span>`;
+        } else {
+            headlineEl.innerHTML = `💧 آب مصرفی امروز: <span style="color: var(--cyan-400); font-family: monospace;">${drankLiters}L</span>`;
+        }
+    }
+}
+
 function initStorage() {
     try {
         const sets = localStorage.getItem('apex_ai_sets');
@@ -107,6 +176,7 @@ function initStorage() {
         if (padel) STATE.padelMatchToday = JSON.parse(padel);
 
         initSupplementsStorage();
+        initWaterStorage();
         initProfileStorage();
 
     } catch (e) {
@@ -190,6 +260,7 @@ function saveProfileSettings() {
 
     renderAthleteHeader();
     renderNutrition();
+    renderTodayCommandCenter();
     closeProfileModal();
     playChime();
     alert(`پروفایل ورزشکار (${name}) با موفقیت ذخیره و روی تمام ماژول‌های برنامه اعمال شد.`);
@@ -539,6 +610,7 @@ function calculateSessionVolume(workout) {
 function selectWorkout(id) {
     STATE.selectedWorkoutId = id;
     renderWorkouts();
+    renderTodayCommandCenter();
 }
 
 function renderExerciseBox(ex) {
@@ -724,9 +796,13 @@ function startTimer() {
         if (STATE.timer.remaining > 0) {
             STATE.timer.remaining--;
             updateTimerText();
+            if (STATE.timer.remaining === 10) {
+                speakVoice('۱۰ ثانیه تا شروع ست بعدی');
+            }
         } else {
             pauseTimer();
             playChime();
+            speakVoice('زمان استراحت پایان یافت، ست جدید را شروع کنید');
             if (navigator.vibrate) {
                 try { navigator.vibrate([300, 150, 300]); } catch(e) {}
             }
@@ -799,6 +875,511 @@ function updateTimerBtn() {
     }
     const floatingBtn = document.getElementById('btn-floating-toggle');
     if (floatingBtn) floatingBtn.innerText = STATE.timer.isRunning ? '⏸' : '▶';
+}
+
+// ==========================================================================
+// 1. SCREEN WAKE LOCK API CONTROLLER
+// ==========================================================================
+async function acquireWakeLock() {
+    if ('wakeLock' in navigator) {
+        try {
+            STATE.wakeLockSentinel = await navigator.wakeLock.request('screen');
+            updateWakeLockBadge(true);
+            STATE.wakeLockSentinel.addEventListener('release', () => {
+                updateWakeLockBadge(false);
+            });
+        } catch (err) {
+            console.log('Wake Lock request error:', err);
+            updateWakeLockBadge(false);
+        }
+    } else {
+        updateWakeLockBadge(false);
+    }
+}
+
+function releaseWakeLock() {
+    if (STATE.wakeLockSentinel) {
+        try {
+            STATE.wakeLockSentinel.release();
+        } catch (e) {}
+        STATE.wakeLockSentinel = null;
+    }
+    updateWakeLockBadge(false);
+}
+
+function updateWakeLockBadge(isActive) {
+    const b = document.getElementById('gym-wake-lock-badge');
+    if (!b) return;
+    if (isActive) {
+        b.innerText = '🔆 صفحه همیشه روشن (Active)';
+        b.style.background = 'rgba(16, 185, 129, 0.2)';
+        b.style.color = 'var(--emerald-400)';
+        b.style.borderColor = 'var(--emerald-400)';
+    } else {
+        b.innerText = '🔆 بیدار نگه‌داشتن صفحه';
+        b.style.background = 'rgba(255, 255, 255, 0.08)';
+        b.style.color = 'var(--text-muted)';
+        b.style.borderColor = 'var(--border-color)';
+    }
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (STATE.gymMode && STATE.gymMode.active && document.visibilityState === 'visible') {
+        acquireWakeLock();
+    }
+});
+
+// ==========================================================================
+// 2. AUDIO VOICE COACH CONTROLLER (Web Speech API)
+// ==========================================================================
+function speakVoice(text) {
+    if (!STATE.voiceCoach) return;
+    if ('speechSynthesis' in window) {
+        try {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'fa-IR';
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            window.speechSynthesis.speak(utterance);
+        } catch (e) {
+            console.log('Speech error:', e);
+        }
+    }
+}
+
+function toggleVoiceCoach() {
+    STATE.voiceCoach = !STATE.voiceCoach;
+    const btn = document.getElementById('btn-gym-voice');
+    if (btn) {
+        if (STATE.voiceCoach) {
+            btn.className = 'btn-voice-toggle';
+            btn.innerText = '🎤 مربی صوتی فعال';
+            speakVoice('مربی صوتی فعال شد');
+        } else {
+            btn.className = 'btn-voice-toggle muted';
+            btn.innerText = '🔇 مربی صوتی غیرفعال';
+        }
+    }
+}
+
+// ==========================================================================
+// 3. TODAY'S COMMAND CENTER CONTROLLER
+// ==========================================================================
+function renderTodayCommandCenter() {
+    const workout = APEX_DATA.workouts.find(w => w.id === STATE.selectedWorkoutId) || APEX_DATA.workouts[0];
+    const wTitle = document.getElementById('today-cmd-workout-title');
+    const wSub = document.getElementById('today-cmd-workout-subtitle');
+    if (wTitle) wTitle.innerText = `${workout.dayName} (${workout.code})`;
+    if (wSub) wSub.innerText = `${workout.focus} • ${workout.exercises.length} حرکت هایپرتروفی • ریتم ۳ ثانیه‌ای منفی`;
+
+    // Supplement summary
+    const list = APEX_DATA.supplementsSchedule || [];
+    const doneCount = list.filter(s => !!STATE.supplementsDone[s.id]).length;
+    const sTitle = document.getElementById('today-cmd-supp-title');
+    const sSub = document.getElementById('today-cmd-supp-subtitle');
+    if (sTitle) {
+        if (doneCount === list.length && list.length > 0) {
+            sTitle.innerHTML = `تمام قرص‌ها مصرف شدند <span style="color: var(--emerald-400);">✓</span>`;
+        } else {
+            sTitle.innerText = `پایش روزانه قرص‌ها (${doneCount}/${list.length})`;
+        }
+    }
+    if (sSub) {
+        const remaining = list.length - doneCount;
+        sSub.innerText = remaining === 0 ? 'ریکاوری و آنابولیسم تضمین شد' : `${remaining} مکمل در انتظار تیک مصرف`;
+    }
+
+    renderWaterTracker();
+}
+
+// ==========================================================================
+// 4. ACTIVE GYM MODE CONTROLLER
+// ==========================================================================
+function openGymMode() {
+    const modal = document.getElementById('gym-mode-modal');
+    if (!modal) return;
+
+    STATE.gymMode.active = true;
+
+    // Auto-detect first exercise with pending sets
+    const workout = APEX_DATA.workouts.find(w => w.id === STATE.selectedWorkoutId) || APEX_DATA.workouts[0];
+    let foundExIdx = 0;
+    let foundSetNum = 1;
+
+    for (let i = 0; i < workout.exercises.length; i++) {
+        const ex = workout.exercises[i];
+        const logged = STATE.loggedSets[ex.id] || [];
+        const incompleteSet = [1, 2, 3, 4].slice(0, ex.sets).find(sNum => {
+            const item = logged.find(s => s.set === sNum);
+            return !item || !item.done;
+        });
+        if (incompleteSet) {
+            foundExIdx = i;
+            foundSetNum = incompleteSet;
+            break;
+        }
+    }
+
+    STATE.gymMode.exIdx = foundExIdx;
+    STATE.gymMode.setNum = foundSetNum;
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    acquireWakeLock();
+    renderGymMode();
+    speakVoice('ورود به حالت تمرین باشگاه. تمرکز کامل روی اجرای تکنیک.');
+}
+
+function closeGymMode() {
+    const modal = document.getElementById('gym-mode-modal');
+    if (modal) modal.style.display = 'none';
+
+    STATE.gymMode.active = false;
+    document.body.style.overflow = '';
+
+    releaseWakeLock();
+    renderWorkouts();
+    renderTodayCommandCenter();
+}
+
+function renderGymMode() {
+    const workout = APEX_DATA.workouts.find(w => w.id === STATE.selectedWorkoutId) || APEX_DATA.workouts[0];
+    const exercises = workout.exercises;
+    const exIdx = STATE.gymMode.exIdx;
+    const ex = exercises[exIdx] || exercises[0];
+
+    const titleEl = document.getElementById('gym-workout-title');
+    const counterEl = document.getElementById('gym-exercise-counter');
+    const barFill = document.getElementById('gym-progress-bar-fill');
+    const focusCard = document.getElementById('gym-focus-card');
+    const btnPrev = document.getElementById('btn-gym-prev-ex');
+    const btnNext = document.getElementById('btn-gym-next-ex');
+
+    if (titleEl) titleEl.innerText = `${workout.dayName} (${workout.code})`;
+    if (counterEl) counterEl.innerText = `حرکت ${exIdx + 1} از ${exercises.length}`;
+
+    // Calculate total workout progress
+    let totalSets = 0;
+    let doneSets = 0;
+    exercises.forEach(e => {
+        totalSets += e.sets;
+        const logged = STATE.loggedSets[e.id] || [];
+        doneSets += logged.filter(s => s.done).length;
+    });
+    const progressPct = totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : 0;
+    if (barFill) barFill.style.width = `${Math.max(4, progressPct)}%`;
+
+    // Navigation buttons state
+    if (btnPrev) btnPrev.disabled = exIdx === 0;
+    if (btnNext) btnNext.disabled = exIdx === exercises.length - 1;
+
+    // Active set data
+    const currentSetNum = STATE.gymMode.setNum;
+    const logged = STATE.loggedSets[ex.id] || [];
+    const currentSetData = logged.find(s => s.set === currentSetNum) || {};
+    const prev = STATE.previousSessions[ex.id] || { weight: ex.startingWeight, reps: 10 };
+
+    const defWeight = currentSetData.weight || prev.weight || ex.startingWeight || 20;
+    let defReps = currentSetData.reps || prev.reps || 10;
+    if (!currentSetData.reps && ex.reps) {
+        const m = String(ex.reps).match(/\d+/g);
+        if (m) defReps = parseInt(m[m.length - 1], 10);
+    }
+
+    // Generate sets dots
+    let dotsHtml = '';
+    for (let s = 1; s <= ex.sets; s++) {
+        const item = logged.find(x => x.set === s);
+        const isDone = item && item.done;
+        const isActive = s === currentSetNum;
+        const cls = isDone ? 'gym-set-dot done' : isActive ? 'gym-set-dot active' : 'gym-set-dot';
+        dotsHtml += `<div class="${cls}" onclick="gymModeJumpToSet(${s})" title="ست ${s}">${isDone ? '✓' : s}</div>`;
+    }
+
+    if (focusCard) {
+        focusCard.innerHTML = `
+            <div class="gym-ex-hero">
+                <div>
+                    <h3 style="font-size: 22px; font-weight: 900; color: #ffffff;">${ex.nameFa}</h3>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-top: 3px;">${ex.nameEn} • ${ex.target}</p>
+                </div>
+                <button class="btn-timer" style="padding: 7px 14px; font-size: 12.5px;" onclick="setTimer(${ex.restSeconds})">
+                    ⏱ ${ex.restSeconds}s استراحت
+                </button>
+            </div>
+
+            <!-- Ghost Guide Baseline -->
+            <div class="ghost-guide-pill" style="margin: 0;">
+                <span>📍 رکورد قبلی در دیتابیس:</span>
+                <b>${prev.weight} کیلوگرم × ${prev.reps} تکرار</b>
+            </div>
+
+            ${ex.technique ? `
+                <div class="exercise-technique-badge" style="margin: 0;">
+                    <span style="font-size: 18px;">⚡</span>
+                    <div><b>تکنیک هایپرتروفی:</b> ${ex.technique}</div>
+                </div>
+            ` : ''}
+
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #fbbf24;">
+                ⏱ <b>ریتم ۳ ثانیه‌ای (${ex.tempo}):</b> ${ex.tempoDetails}
+            </div>
+
+            <div style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.7; background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 6px;">
+                ${ex.formCues.map(c => `• ${c}`).join(' ')}
+            </div>
+
+            <!-- Sets Dots Tracker -->
+            <div style="display: flex; flex-direction: column; gap: 6px; align-items: center; margin: 4px 0;">
+                <span style="font-size: 12px; color: var(--text-muted); font-weight: 700;">ست‌های این حرکت:</span>
+                <div class="gym-sets-dots-row">
+                    ${dotsHtml}
+                </div>
+            </div>
+
+            <!-- Active Set Focus Box -->
+            <div class="gym-set-focus-box">
+                <div class="gym-set-focus-header">
+                    <span class="gym-set-badge">🔥 ست شماره ${currentSetNum} از ${ex.sets} (هدف: ${ex.reps})</span>
+                    <span style="font-size: 12.5px; color: var(--text-muted);">فشار RIR: <b>${ex.rir}</b></span>
+                </div>
+
+                <div class="gym-inputs-row">
+                    <div class="gym-input-group">
+                        <label>وزنه واقعی (kg):</label>
+                        <div style="display: flex; gap: 4px;">
+                            <button type="button" class="btn-water-reset" style="padding: 10px;" onclick="gymModeAdjustWeight(-2.5)">-</button>
+                            <input type="number" step="0.5" id="gym-input-weight" class="gym-input-large" value="${defWeight}" style="flex: 1;">
+                            <button type="button" class="btn-water-reset" style="padding: 10px;" onclick="gymModeAdjustWeight(2.5)">+</button>
+                        </div>
+                    </div>
+                    <div class="gym-input-group">
+                        <label>تعداد تکرار اجرا شده:</label>
+                        <div style="display: flex; gap: 4px;">
+                            <button type="button" class="btn-water-reset" style="padding: 10px;" onclick="gymModeAdjustReps(-1)">-</button>
+                            <input type="number" id="gym-input-reps" class="gym-input-large" value="${defReps}" style="flex: 1;">
+                            <button type="button" class="btn-water-reset" style="padding: 10px;" onclick="gymModeAdjustReps(1)">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn-gym-complete-set" onclick="gymModeLogCurrentSet()">
+                    <span>✓</span>
+                    <span>ثبت ست ${currentSetNum} و شروع استراحت (${ex.restSeconds} ثانیه)</span>
+                </button>
+            </div>
+        `;
+    }
+}
+
+function gymModeAdjustWeight(delta) {
+    const input = document.getElementById('gym-input-weight');
+    if (!input) return;
+    const val = Math.max(0, (parseFloat(input.value) || 0) + delta);
+    input.value = (val % 1 === 0) ? val : val.toFixed(1);
+}
+
+function gymModeAdjustReps(delta) {
+    const input = document.getElementById('gym-input-reps');
+    if (!input) return;
+    const val = Math.max(1, (parseInt(input.value, 10) || 0) + delta);
+    input.value = val;
+}
+
+function gymModeJumpToSet(setNum) {
+    STATE.gymMode.setNum = setNum;
+    renderGymMode();
+}
+
+function gymModePrevExercise() {
+    if (STATE.gymMode.exIdx > 0) {
+        STATE.gymMode.exIdx--;
+        STATE.gymMode.setNum = 1;
+        renderGymMode();
+    }
+}
+
+function gymModeNextExercise() {
+    const workout = APEX_DATA.workouts.find(w => w.id === STATE.selectedWorkoutId) || APEX_DATA.workouts[0];
+    if (STATE.gymMode.exIdx < workout.exercises.length - 1) {
+        STATE.gymMode.exIdx++;
+        STATE.gymMode.setNum = 1;
+        renderGymMode();
+    }
+}
+
+function gymModeLogCurrentSet() {
+    const workout = APEX_DATA.workouts.find(w => w.id === STATE.selectedWorkoutId) || APEX_DATA.workouts[0];
+    const ex = workout.exercises[STATE.gymMode.exIdx];
+    const wInput = document.getElementById('gym-input-weight');
+    const rInput = document.getElementById('gym-input-reps');
+
+    const weight = wInput ? (parseFloat(wInput.value) || 20) : 20;
+    const reps = rInput ? (parseInt(rInput.value, 10) || 10) : 10;
+    const setNum = STATE.gymMode.setNum;
+
+    // Save set input
+    saveSetInput(ex.id, setNum, 'weight', weight);
+    saveSetInput(ex.id, setNum, 'reps', reps);
+
+    // Toggle set done
+    if (!STATE.loggedSets[ex.id]) STATE.loggedSets[ex.id] = [];
+    let item = STATE.loggedSets[ex.id].find(s => s.set === setNum);
+    if (!item) {
+        item = { set: setNum, weight: weight, reps: reps, done: true };
+        STATE.loggedSets[ex.id].push(item);
+    } else {
+        item.done = true;
+        item.weight = weight;
+        item.reps = reps;
+    }
+    STATE.previousSessions[ex.id] = { weight: weight, reps: reps };
+    savePrevious();
+    saveSets();
+    playChime();
+
+    // Voice Coach feedback
+    speakVoice(`ست ${setNum} ثبت شد. وزنه ${weight} کیلو. استراحت شروع شد.`);
+
+    // Start rest timer
+    if (ex.restSeconds > 0) {
+        setTimer(ex.restSeconds);
+    }
+
+    // Advance set or exercise
+    if (setNum < ex.sets) {
+        STATE.gymMode.setNum = setNum + 1;
+    } else {
+        if (STATE.gymMode.exIdx < workout.exercises.length - 1) {
+            STATE.gymMode.exIdx++;
+            STATE.gymMode.setNum = 1;
+            speakVoice(`تمام ست‌های این حرکت انجام شد. حرکت بعدی: ${workout.exercises[STATE.gymMode.exIdx].nameFa}`);
+        } else {
+            speakVoice('تبریک! تمام حرکات تمرین امروز با موفقیت تکمیل شدند.');
+        }
+    }
+
+    renderGymMode();
+    renderTodayCommandCenter();
+}
+
+// ==========================================================================
+// 5. 3-STEP ONBOARDING WIZARD CONTROLLER
+// ==========================================================================
+function openOnboardingWizard() {
+    const modal = document.getElementById('onboarding-wizard-modal');
+    if (!modal) return;
+    const a = APEX_DATA.athlete;
+
+    const nameInp = document.getElementById('wiz-input-name');
+    const ageInp = document.getElementById('wiz-input-age');
+    const heightInp = document.getElementById('wiz-input-height');
+    const weightInp = document.getElementById('wiz-input-weight');
+    const targetWeightInp = document.getElementById('wiz-input-target-weight');
+    const smmInp = document.getElementById('wiz-input-smm');
+
+    if (nameInp) nameInp.value = a.name;
+    if (ageInp) ageInp.value = a.age || 28;
+    if (heightInp) heightInp.value = a.height || 184;
+    if (weightInp) weightInp.value = a.startWeight;
+    if (targetWeightInp) targetWeightInp.value = a.targetWeight;
+    if (smmInp) smmInp.value = a.smm;
+
+    goToWizardStep(1);
+    modal.style.display = 'flex';
+}
+
+function closeOnboardingWizard() {
+    const modal = document.getElementById('onboarding-wizard-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function goToWizardStep(stepNum) {
+    for (let i = 1; i <= 3; i++) {
+        const pane = document.getElementById(`wiz-step-${i}`);
+        const dot = document.getElementById(`wiz-dot-${i}`);
+        if (pane) pane.style.display = (i === stepNum) ? 'flex' : 'none';
+        if (dot) {
+            if (i === stepNum) dot.classList.add('active');
+            else dot.classList.remove('active');
+        }
+    }
+}
+
+function finishOnboarding() {
+    const name = (document.getElementById('wiz-input-name').value || '').trim() || 'ورزشکار';
+    const age = parseInt(document.getElementById('wiz-input-age').value, 10) || 28;
+    const height = parseInt(document.getElementById('wiz-input-height').value, 10) || 184;
+    const weight = parseFloat(document.getElementById('wiz-input-weight').value) || 88.0;
+    const targetWeight = parseFloat(document.getElementById('wiz-input-target-weight').value) || (weight - 5);
+    const smm = parseFloat(document.getElementById('wiz-input-smm').value) || Math.round(weight * 0.48 * 10) / 10;
+
+    const goalRadios = document.getElementsByName('wiz_goal');
+    let selectedGoal = 'hypertrophy';
+    for (const r of goalRadios) {
+        if (r.checked) {
+            selectedGoal = r.value;
+            break;
+        }
+    }
+
+    // Dynamic calorie calculation based on Harris-Benedict & Activity
+    const bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+    const tdee = Math.round(bmr * 1.45);
+
+    let baseCalories = tdee;
+    if (selectedGoal === 'hypertrophy') {
+        baseCalories = tdee + 150;
+    } else if (selectedGoal === 'fat_loss') {
+        baseCalories = tdee - 400;
+    } else if (selectedGoal === 'padel_hybrid') {
+        baseCalories = tdee;
+    }
+
+    const protein = Math.round(weight * 2.2);
+    const fats = Math.round((baseCalories * 0.22) / 9);
+    const carbs = Math.round((baseCalories - (protein * 4) - (fats * 9)) / 4);
+
+    APEX_DATA.athlete.name = name;
+    APEX_DATA.athlete.age = age;
+    APEX_DATA.athlete.height = height;
+    APEX_DATA.athlete.startWeight = weight;
+    APEX_DATA.athlete.targetWeight = targetWeight;
+    APEX_DATA.athlete.smm = smm;
+    APEX_DATA.athlete.baseCalories = baseCalories;
+    APEX_DATA.athlete.macros = {
+        protein: protein,
+        carbs: carbs,
+        fats: fats
+    };
+    APEX_DATA.athlete.goal = selectedGoal;
+
+    localStorage.setItem('apex_athlete_profile', JSON.stringify({
+        name: name,
+        age: age,
+        height: height,
+        weight: weight,
+        targetWeight: targetWeight,
+        smm: smm,
+        baseCalories: baseCalories,
+        macros: APEX_DATA.athlete.macros,
+        goal: selectedGoal
+    }));
+
+    closeOnboardingWizard();
+    renderAthleteHeader();
+    renderNutrition();
+    renderWorkouts();
+    renderTodayCommandCenter();
+    playChime();
+
+    speakVoice(`خوش آمدید ${name} عزیز. برنامه اختصاصی شما تنظیم شد.`);
+    STATE.chatMessages.push({
+        sender: 'coach',
+        text: `درود ${name} جان! سیستم اختصاصی تو بر اساس وزن ${weight} کیلو، قد ${height} سانتی‌متر و عضله اسکلتی ${smm} کیلو کالیبره شد. کالری روزانه روی ${baseCalories.toLocaleString('fa-IR')} کیلوکالری تنظیم است. آماده‌ایم برای فتح اهداف ورزشی تو!`
+    });
 }
 
 // Nutrition
@@ -1212,6 +1793,7 @@ function toggleSupplementDone(suppId) {
     }
     renderSupplementsChecklist();
     checkSupplementReminders();
+    renderTodayCommandCenter();
 }
 
 function resetSupplementsDaily() {
@@ -1220,6 +1802,7 @@ function resetSupplementsDaily() {
         saveSupplements();
         renderSupplementsChecklist();
         checkSupplementReminders();
+        renderTodayCommandCenter();
     }
 }
 
@@ -1282,6 +1865,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateReadinessUI();
     updateTimerText();
     updateTimerBtn();
+    renderTodayCommandCenter();
 
     // Periodic reminder check every 60 seconds
     setInterval(checkSupplementReminders, 60000);
