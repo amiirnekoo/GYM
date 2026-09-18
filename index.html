@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APEX ATHLETE | پلتفرم هوشمند فیزیولوژی، هایپرتروفی و پدل امیر</title>
+    
+    <!-- Google Fonts: Vazirmatn -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header class="app-header">
+            <div class="brand-section">
+                <div class="brand-logo">⚡</div>
+                <div class="brand-title">
+                    <h1>APEX ATHLETE <span style="font-size: 11px; padding: 2px 8px; border-radius: 99px; background: rgba(16, 185, 129, 0.2); color: var(--emerald-400); border: 1px solid rgba(16, 185, 129, 0.4);">AI Powered</span></h1>
+                    <p>سیستم هوشمند فیزیولوژی، تنظیم تطبیقی اضافه‌بار و مربیگری اختصاصی امیر</p>
+                </div>
+            </div>
+            <div class="header-badges">
+                <span class="badge-pill">امتیاز اینبادی: ۹۲ از ۱۰۰</span>
+                <span class="badge-pill cyan">توده عضلانی: ۴۳.۶ کیلوگرم</span>
+            </div>
+        </header>
+
+        <!-- InBody Calibrated Metric Bar -->
+        <section class="athlete-bar">
+            <div class="bar-stat">
+                <span class="lbl">وزن فعلی / هدف بدون کوچک شدن</span>
+                <div class="val">۸۸.۰ <span style="font-size: 14px; color: var(--text-muted);">-> ۸۳.۰ kg</span></div>
+                <span class="tag">رسیدن به چربی ۱۰.۵٪ با حفظ ۱۰۰٪ عضلات</span>
+            </div>
+            <div class="bar-stat">
+                <span class="lbl">توده عضله اسکلتی (SMM)</span>
+                <div class="val" style="color: var(--emerald-400);">۴۳.۶ <span style="font-size: 13px;">کیلوگرم</span></div>
+                <span class="tag" style="color: var(--emerald-400);">پایه عضلانی فوق‌العاده قوی</span>
+            </div>
+            <div class="bar-stat">
+                <span class="lbl">کالری پایه تطبیقی</span>
+                <div class="val" id="header-cals-val">۲,۳۸۰ <span style="font-size: 13px;">kcal</span></div>
+                <span class="tag">۱۹۵g پروتئین | ۲۴۰g کربوهیدرات</span>
+            </div>
+            <div class="bar-stat">
+                <span class="lbl">زمان حضور در باشگاه</span>
+                <div class="val">۹۰ تا ۱۰۰ <span style="font-size: 13px;">دقیقه</span></div>
+                <span class="tag">گرم کردن + وزنه سنگین + کاردیو و تنفس</span>
+            </div>
+        </section>
+
+        <!-- SMART ENGINE 3: Daily Biofeedback & Readiness Bar -->
+        <div class="readiness-banner">
+            <div class="readiness-score-box">
+                <div class="readiness-circle" id="readiness-score-number">92%</div>
+                <div class="readiness-meta">
+                    <h4>شاخص آمادگی زیستی امروز (Readiness Score)</h4>
+                    <p id="readiness-status-text">آمادگی عالی: سیستم عصبی و عضلات آماده حمله به رکوردها</p>
+                </div>
+            </div>
+            <button class="readiness-action-btn" onclick="promptReadinessCheck()">
+                ⚡ سنجش آمادگی امروز
+            </button>
+        </div>
+
+        <!-- SMART ENGINE 4: Padel Load Balancer Bar -->
+        <div class="padel-balancer-banner">
+            <div class="padel-info">
+                <span class="padel-icon">🎾</span>
+                <div class="padel-text">
+                    <h4>متعادل‌کننده بار مسابقات پدل (Padel Balancer)</h4>
+                    <p id="padel-match-status-text">امروز مسابقه پدل ثبت نشده است (کربوهیدرات در حالت استاندارد).</p>
+                </div>
+            </div>
+            <button class="btn-padel-log" id="btn-padel-toggle" onclick="togglePadelMatch()">
+                🎾 ثبت بازی پدل امروز
+            </button>
+        </div>
+
+        <!-- Navigation Bar -->
+        <nav class="nav-bar">
+            <button class="nav-tab active" data-tab="workout" onclick="switchTab('workout')">
+                🏋️‍♂️ تمرین و اضافه‌بار خودکار
+            </button>
+            <button class="nav-tab" data-tab="nutrition" onclick="switchTab('nutrition')">
+                🍗 رژیم تطبیقی و کالری
+            </button>
+            <button class="nav-tab" data-tab="asymmetry" onclick="switchTab('asymmetry')">
+                ⚖️ اصلاح ناهماهنگی شانه و ساق چپ
+            </button>
+            <button class="nav-tab" data-tab="recovery" onclick="switchTab('recovery')">
+                🌙 خواب دوفازی و مکمل‌ها
+            </button>
+            <button class="nav-tab" data-tab="progress" onclick="switchTab('progress')">
+                📊 پایش وزن ناشتا
+            </button>
+        </nav>
+
+        <!-- VIEW: WORKOUT -->
+        <section id="view-workout" class="view-section active">
+            
+            <!-- Rest Timer Banner -->
+            <div class="rest-timer-banner">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <span style="font-size: 13.5px; color: #cbd5e1;">⏱ تایمر هوشمند استراحت مفاصل:</span>
+                    <div class="timer-digits" id="timer-val">01:30</div>
+                </div>
+                <div class="timer-btns">
+                    <button class="btn-timer primary" id="btn-timer-toggle" onclick="startTimer()">شروع</button>
+                    <button class="btn-timer" onclick="resetTimer()">ریست</button>
+                    <button class="btn-timer" onclick="adjustTimer(30)">+۳۰ ثانیه</button>
+                    <button class="btn-timer" onclick="adjustTimer(-30)">-۳۰ ثانیه</button>
+                </div>
+            </div>
+
+            <!-- Workout Day Selector -->
+            <div class="days-row" id="days-selector-bar">
+                <!-- Injected by app.js -->
+            </div>
+
+            <!-- Workout Content Area -->
+            <div id="workout-exercises-area">
+                <!-- Injected by app.js -->
+            </div>
+
+        </section>
+
+        <!-- VIEW: NUTRITION -->
+        <section id="view-nutrition" class="view-section">
+            
+            <!-- SMART ENGINE 2: Adaptive Macros Row -->
+            <div class="nutrition-macros-row">
+                <div class="macro-card">
+                    <div class="t">انرژی کل روزانه</div>
+                    <div class="v" id="macro-cals-val">2,380 <span style="font-size: 12px;">kcal</span></div>
+                </div>
+                <div class="macro-card">
+                    <div class="t">پروتئین عضله‌ساز (۲.۲g/kg)</div>
+                    <div class="v" style="color: var(--emerald-400);">195 <span style="font-size: 12px;">g</span></div>
+                </div>
+                <div class="macro-card">
+                    <div class="t">کربوهیدرات برنج و سیب‌زمینی</div>
+                    <div class="v" id="macro-carbs-val" style="color: var(--cyan-400);">240 <span style="font-size: 12px;">g</span></div>
+                </div>
+                <div class="macro-card">
+                    <div class="t">چربی‌های مفید و هورمونی</div>
+                    <div class="v" style="color: var(--amber-500);">65 <span style="font-size: 12px;">g</span></div>
+                </div>
+            </div>
+
+            <!-- Adaptive Recalibration Banner -->
+            <div class="adaptive-recal-box">
+                <div>
+                    <h4 style="font-size: 14px; font-weight: 800; color: #fbbf24;">⚡ تنظیم خودکار متابولیسم (مشابه متد MacroFactor)</h4>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                        سیستم شیب هفتگی وزن شما را تحلیل کرده و در صورت استپ یا افت سریع، کالری را تنظیم می‌کند.
+                    </p>
+                </div>
+                <button class="btn-timer" style="background: var(--amber-500); color: #000; font-weight: 800;" onclick="runAdaptiveTDEECalibration()">
+                    تحلیل روند و بازتنظیم هوشمند کالری
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">🍽 برنامه غذایی واقعی و در دسترس (تیک بزنید تا ثبت شود)</h3>
+                    <span class="badge-pill">بدون موارد پیچیده</span>
+                </div>
+                <div id="meals-clean-list">
+                    <!-- Injected by app.js -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- VIEW: ASYMMETRY & POSTURE -->
+        <section id="view-asymmetry" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">🔍 بررسی علمی و اصلاح ناهماهنگی‌های بدنی امیر</h3>
+                    <span class="badge-pill">بر اساس معاینه بصری و InBody</span>
+                </div>
+                
+                <div style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.8; margin-bottom: 16px;">
+                    با بررسی تصاویر ارسالی شما و برگه رسمی InBody، سه ناهماهنگی فیزیولوژیک شناسایی شد که در این برنامه پروتکل درمانی و اصلاحی ۱۰۰٪ برای آنها اعمال شده است:
+                </div>
+
+                <div id="asymmetry-content">
+                    <!-- Injected by app.js -->
+                </div>
+
+                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 14px 18px; margin-top: 16px; font-size: 13px; color: #ffffff;">
+                    ✅ <b>دستور مربی در باشگاه:</b> در تمام حرکات دمبل، همیشه دست یا پای ضعیف‌تر (ساق چپ / سینه راست) را معیار تعداد تکرار قرار دهید. هرگز با دست یا پای قوی‌تر تکرار اضافی نزنید تا تراز کامل برقرار شود.
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW: RECOVERY & SLEEP -->
+        <section id="view-recovery" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">🌙 زمان‌بندی خواب دوفازی (Biphasic Sleep Protocol)</h3>
+                    <span class="badge-pill">تطبیق با برنامه مناجات ۴ صبح</span>
+                </div>
+                
+                <div style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.8;">
+                    <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 12px 16px; margin-bottom: 10px;">
+                        <b style="color: #ffffff;">۱. فاز اول خواب (۲۳:۴۵ الی ۰۴:۰۰ - حدود ۴ ساعت و ۱۵ دقیقه):</b><br>
+                        بخش عمده خواب عمیق Slow-Wave و اوج ترشح هورمون رشد (GH). قطع نورهای سفید خانه از ساعت ۲۲:۰۰ و تنظیم دمای اتاق روی ۱۹-۲۰ درجه.
+                    </div>
+                    <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 12px 16px; margin-bottom: 10px;">
+                        <b style="color: var(--amber-500);">۲. بازه مناجات و آرامش روانی (۰۴:۰۰ الی ۰۶:۰۰):</b><br>
+                        نورهای ملایم زرد/آباژور، پرهیز مطلق از نگاه کردن به صفحه موبایل و اخبار، و نوشیدن آب ولرم با لیمو.
+                    </div>
+                    <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 12px 16px;">
+                        <b style="color: var(--emerald-400);">۳. فاز دوم خواب (۰۶:۰۰ الی ۰۷:۴۵ - ۱ ساعت و ۴۵ دقیقه):</b><br>
+                        ۱ چرخه کامل REM برای یادگیری حرکتی تکنیک‌های پدل. استفاده حتمی از چشم‌بند خواب برای جلوگیری از تابش نور خورشید.
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">💊 پروتکل مکمل‌های ضروری برای ورزشکار نچرال</h3>
+                    <span class="badge-pill">اثبات‌شده علمی</span>
+                </div>
+                <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.8;">
+                    <p>• <b>کراتین مونوهیدرات:</b> ۵ گرم روزانه همراه با ناهار (حفظ پر بودن عضلات و جلوگیری از افت توان انفجاری در پدل).</p>
+                    <p>• <b>پروتئین وی ایزوله:</b> ۱ اسکوپ بلافاصله بعد تمرین یا عصرانه با سیب‌زمینی.</p>
+                    <p>• <b>امگا ۳ غلیظ:</b> ۲۰۰۰ میلی‌گرم با ناهار (روغن‌کاری مفاصل شانه و زانو در برابر ضربات پدل).</p>
+                    <p>• <b>منیزیم بایس‌گلیسینات:</b> ۳۰۰ میلی‌گرم قبل از خواب اول برای ریلکسیشن عضلات.</p>
+                    <p>• <b>ویتامین D3+K2:</b> همراه با صبحانه تخم‌مرغ.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW: PROGRESS -->
+        <section id="view-progress" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">⚖️ ثبت وزن ناشتا (صبح‌ها بعد از دستشویی)</h3>
+                    <span class="badge-pill">هدف: ۸۳ کیلوگرم</span>
+                </div>
+                <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                    <input type="number" step="0.1" id="weight-input-field" placeholder="وزن امروز (مثلاً 87.8)" class="input-num" style="flex: 1; text-align: right; padding-right: 12px;">
+                    <button class="btn-timer primary" style="padding: 10px 20px;" onclick="addWeightLog()">ثبت رکورد</button>
+                </div>
+
+                <h4 style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">سوابق ثبت‌شده:</h4>
+                <ul id="weight-logs-clean" style="list-style: none;">
+                    <!-- Injected by app.js -->
+                </ul>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- SMART ENGINE 5: Floating In-App AI Coach Trigger -->
+    <button class="ai-coach-trigger-btn" onclick="toggleAiModal()">
+        <span>🤖</span>
+        <span>مربی هوش مصنوعی</span>
+    </button>
+
+    <!-- AI Coach Modal Overlay -->
+    <div class="ai-modal-overlay" id="ai-coach-modal">
+        <div class="ai-modal-card">
+            <div class="ai-modal-header">
+                <h3>
+                    <span>🤖</span>
+                    <span>دستیار هوشمند مربی امیر (AI Coach)</span>
+                </h3>
+                <button class="ai-close-btn" onclick="toggleAiModal()">✕</button>
+            </div>
+
+            <div class="ai-chat-messages" id="ai-chat-box">
+                <!-- Injected by app.js -->
+            </div>
+
+            <!-- Quick Prompt Pills -->
+            <div class="ai-quick-pills">
+                <button class="pill-btn" onclick="askQuickPrompt('chicken_sub')">🍗 جایگزین‌های ناهار مرغ</button>
+                <button class="pill-btn" onclick="askQuickPrompt('shoulder_pain')">🎾 گرفتگی شانه راست پدل</button>
+                <button class="pill-btn" onclick="askQuickPrompt('padel_fuel')">⚡ سوخت قبل مسابقه پدل</button>
+                <button class="pill-btn" onclick="askQuickPrompt('left_calf')">🦵 پر کردن ساق چپ</button>
+            </div>
+
+            <div class="ai-input-row">
+                <input type="text" id="ai-user-text" class="ai-chat-input" placeholder="هر سوالی درباره رژیم، درد مفاصل یا حرکات داری بپرس..." onkeypress="if(event.key==='Enter') sendUserMessage()">
+                <button class="btn-send" onclick="sendUserMessage()">ارسال</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Navigation Bar -->
+    <div class="mobile-nav-bar">
+        <button class="mobile-nav-btn active" data-tab="workout" onclick="switchTab('workout')">
+            <span>🏋️‍♂️ تمرین</span>
+        </button>
+        <button class="mobile-nav-btn" data-tab="nutrition" onclick="switchTab('nutrition')">
+            <span>🍗 رژیم</span>
+        </button>
+        <button class="mobile-nav-btn" data-tab="asymmetry" onclick="switchTab('asymmetry')">
+            <span>⚖️ تقارن</span>
+        </button>
+        <button class="mobile-nav-btn" data-tab="recovery" onclick="switchTab('recovery')">
+            <span>🌙 خواب</span>
+        </button>
+        <button class="mobile-nav-btn" data-tab="progress" onclick="switchTab('progress')">
+            <span>📊 وزن</span>
+        </button>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
