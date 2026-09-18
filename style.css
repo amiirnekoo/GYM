@@ -1077,6 +1077,119 @@ body {
     border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
+.supp-status-badge.current-window {
+    background: rgba(245, 158, 11, 0.22);
+    color: #fbbf24;
+    border: 1px solid var(--amber-400);
+    animation: gentlePulse 2s infinite alternate;
+}
+
+.supp-card.card-overdue {
+    border-color: rgba(244, 63, 94, 0.4);
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.08), var(--bg-card));
+}
+
+/* Athlete Profile Button in Header */
+.btn-profile-edit {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    border-radius: var(--radius-full);
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-profile-edit:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    border-color: var(--cyan-400);
+    transform: translateY(-1px);
+}
+
+/* Floating Sticky Rest Timer Widget */
+.floating-timer-widget {
+    position: fixed;
+    bottom: 82px;
+    right: 20px;
+    z-index: 999;
+    background: rgba(24, 34, 52, 0.96);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--emerald-500);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px var(--emerald-glow);
+    animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.floating-timer-inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 14px;
+}
+
+.floating-timer-icon {
+    font-size: 20px;
+}
+
+.floating-timer-meta {
+    display: flex;
+    flex-direction: column;
+}
+
+.floating-timer-lbl {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    font-weight: 700;
+}
+
+.floating-timer-digits {
+    font-size: 18px;
+    font-weight: 900;
+    font-family: monospace;
+    color: var(--emerald-400);
+}
+
+.floating-timer-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-timer-action {
+    background: var(--bg-inner);
+    border: 1px solid var(--border-color);
+    color: #ffffff;
+    border-radius: var(--radius-sm);
+    padding: 5px 9px;
+    font-size: 11.5px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-timer-action:hover {
+    border-color: var(--emerald-400);
+    color: var(--emerald-400);
+}
+
+.btn-timer-action.close {
+    color: var(--text-muted);
+    border: none;
+    font-size: 13px;
+    padding: 4px 6px;
+}
+
 .supp-purpose-box {
     font-size: 12.5px;
     color: var(--text-secondary);

@@ -29,12 +29,15 @@
                 <div class="brand-logo">⚡</div>
                 <div class="brand-title">
                     <h1>APEX ATHLETE <span style="font-size: 11px; padding: 3px 8px; border-radius: 99px; background: rgba(16, 185, 129, 0.2); color: var(--emerald-400); border: 1px solid rgba(16, 185, 129, 0.4); font-weight: 800;">PWA Active</span></h1>
-                    <p>سیستم هوشمند فیزیولوژی، تنظیم تطبیقی اضافه‌بار و مربیگری اختصاصی امیر</p>
+                    <p id="brand-athlete-subtitle">سیستم هوشمند فیزیولوژی، تنظیم تطبیقی اضافه‌بار و مربیگری اختصاصی امیر</p>
                 </div>
             </div>
             <div class="header-badges">
-                <span class="badge-pill">امتیاز اینبادی: ۹۲ از ۱۰۰</span>
-                <span class="badge-pill cyan">عضله اسکلتی: ۴۳.۶ کیلو</span>
+                <button class="btn-profile-edit" onclick="openProfileModal()" title="تنظیمات پروفایل ورزشکار">
+                    <span>⚙️</span>
+                    <span id="header-athlete-name-badge">پروفایل: امیر</span>
+                </button>
+                <span class="badge-pill cyan" id="header-smm-badge">عضله اسکلتی: ۴۳.۶ کیلو</span>
             </div>
         </header>
 
@@ -42,23 +45,23 @@
         <section class="athlete-bar">
             <div class="bar-stat">
                 <span class="lbl">وزن فعلی / هدف بدون کوچک شدن</span>
-                <div class="val">۸۸.۰ <span style="font-size: 14px; color: var(--text-muted);">-> ۸۳.۰ kg</span></div>
+                <div class="val" id="stat-weight-val">۸۸.۰ <span style="font-size: 14px; color: var(--text-muted);">-> ۸۳.۰ kg</span></div>
                 <span class="tag">رسیدن به چربی ۱۰.۵٪ با حفظ ۱۰۰٪ عضلات</span>
             </div>
             <div class="bar-stat">
                 <span class="lbl">توده عضله اسکلتی (SMM)</span>
-                <div class="val" style="color: var(--emerald-400);">۴۳.۶ <span style="font-size: 13px;">کیلوگرم</span></div>
+                <div class="val" id="stat-smm-val" style="color: var(--emerald-400);">۴۳.۶ <span style="font-size: 13px;">کیلوگرم</span></div>
                 <span class="tag" style="color: var(--emerald-400);">پایه عضلانی فوق‌العاده قوی</span>
             </div>
             <div class="bar-stat">
                 <span class="lbl">کالری پایه تطبیقی</span>
                 <div class="val" id="header-cals-val">۲,۳۸۰ <span style="font-size: 13px;">kcal</span></div>
-                <span class="tag">۱۹۵g پروتئین | ۲۴۰g کربوهیدرات</span>
+                <span class="tag" id="stat-macros-tag">۱۹۵g پروتئین | ۲۴۰g کربوهیدرات</span>
             </div>
             <div class="bar-stat">
                 <span class="lbl">زمان حضور در باشگاه</span>
-                <div class="val">۹۰ تا ۱۰۰ <span style="font-size: 13px;">دقیقه</span></div>
-                <span class="tag">گرم کردن + وزنه سنگین + کاردیو و تنفس</span>
+                <div class="val">۹۰ تا ۱۱۰ <span style="font-size: 13px;">دقیقه</span></div>
+                <span class="tag">گرم کردن + تمرین سنگین ۲۶ ست + کاردیو</span>
             </div>
         </section>
 
@@ -171,6 +174,7 @@
             <div id="workout-exercises-area">
                 <!-- Injected by app.js -->
             </div>
+        </section>
 
         <!-- VIEW: SUPPLEMENTS & PILLS CHECKLIST -->
         <section id="view-supplements" class="view-section">
@@ -391,6 +395,72 @@
             <div class="ai-input-row">
                 <input type="text" id="ai-user-text" class="ai-chat-input" placeholder="هر سوالی درباره رژیم، درد مفاصل یا حرکات داری بپرس..." onkeypress="if(event.key==='Enter') sendUserMessage()">
                 <button class="btn-send" onclick="sendUserMessage()">ارسال</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Sticky Rest Timer Widget -->
+    <div id="floating-rest-timer" class="floating-timer-widget" style="display: none;">
+        <div class="floating-timer-inner">
+            <span class="floating-timer-icon">⏱</span>
+            <div class="floating-timer-meta">
+                <span class="floating-timer-lbl" id="floating-timer-lbl">استراحت بین ست</span>
+                <span class="floating-timer-digits" id="floating-timer-val">01:30</span>
+            </div>
+            <div class="floating-timer-actions">
+                <button class="btn-timer-action" id="btn-floating-toggle" onclick="toggleTimerRunning()">⏸</button>
+                <button class="btn-timer-action" onclick="adjustTimer(30)">+30s</button>
+                <button class="btn-timer-action close" onclick="closeFloatingTimer()">✕</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Athlete Profile Settings Modal -->
+    <div class="ai-modal-overlay" id="profile-settings-modal" style="display: none;">
+        <div class="ai-modal-card" style="max-width: 480px;">
+            <div class="ai-modal-header">
+                <h3>
+                    <span>⚙️</span>
+                    <span>تنظیمات پروفایل ورزشکار (شخصی‌سازی)</span>
+                </h3>
+                <button class="ai-close-btn" onclick="closeProfileModal()">✕</button>
+            </div>
+            <div style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+                <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.7;">
+                    برای استفاده شخصی یا در صورت استفاده شخص دیگر، مشخصات را اینجا تنظیم کنید تا کالری و آمار به صورت اختصاصی محاسبه شود:
+                </p>
+                <div>
+                    <label style="font-size: 12.5px; color: var(--text-muted); font-weight: 700; display: block; margin-bottom: 4px;">نام ورزشکار:</label>
+                    <input type="text" id="prof-input-name" class="ai-chat-input" placeholder="مثلاً: امیر" style="width: 100%;">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="font-size: 12.5px; color: var(--text-muted); font-weight: 700; display: block; margin-bottom: 4px;">وزن فعلی (kg):</label>
+                        <input type="number" step="0.5" id="prof-input-weight" class="ai-chat-input" placeholder="88.0" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 12.5px; color: var(--text-muted); font-weight: 700; display: block; margin-bottom: 4px;">وزن هدف (kg):</label>
+                        <input type="number" step="0.5" id="prof-input-target-weight" class="ai-chat-input" placeholder="83.0" style="width: 100%;">
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="font-size: 12.5px; color: var(--text-muted); font-weight: 700; display: block; margin-bottom: 4px;">توده عضلانی SMM (kg):</label>
+                        <input type="number" step="0.1" id="prof-input-smm" class="ai-chat-input" placeholder="43.6" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 12.5px; color: var(--text-muted); font-weight: 700; display: block; margin-bottom: 4px;">کالری پایه روزانه:</label>
+                        <input type="number" id="prof-input-calories" class="ai-chat-input" placeholder="2380" style="width: 100%;">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="btn-timer primary" style="flex: 1; padding: 12px;" onclick="saveProfileSettings()">
+                        💾 ذخیره و اعمال
+                    </button>
+                    <button class="btn-timer" style="padding: 12px; background: rgba(244, 63, 94, 0.2); border-color: var(--rose-500); color: #fb7185;" onclick="resetAllAppData()">
+                        🔄 بازنشانی کلی
+                    </button>
+                </div>
             </div>
         </div>
     </div>

@@ -107,9 +107,99 @@ function initStorage() {
         if (padel) STATE.padelMatchToday = JSON.parse(padel);
 
         initSupplementsStorage();
+        initProfileStorage();
 
     } catch (e) {
         console.warn('Storage error:', e);
+    }
+}
+
+// Profile Storage & Customization for multi-user / SaaS
+function initProfileStorage() {
+    try {
+        const custom = localStorage.getItem('apex_athlete_profile');
+        if (custom) {
+            const p = JSON.parse(custom);
+            if (p.name) APEX_DATA.athlete.name = p.name;
+            if (p.weight) APEX_DATA.athlete.startWeight = parseFloat(p.weight);
+            if (p.targetWeight) APEX_DATA.athlete.targetWeight = parseFloat(p.targetWeight);
+            if (p.smm) APEX_DATA.athlete.smm = parseFloat(p.smm);
+            if (p.baseCalories) APEX_DATA.athlete.baseCalories = parseInt(p.baseCalories, 10);
+        }
+    } catch(e) {}
+    renderAthleteHeader();
+}
+
+function renderAthleteHeader() {
+    const a = APEX_DATA.athlete;
+    const nameBadge = document.getElementById('header-athlete-name-badge');
+    const subtitle = document.getElementById('brand-athlete-subtitle');
+    const smmBadge = document.getElementById('header-smm-badge');
+    const weightVal = document.getElementById('stat-weight-val');
+    const smmVal = document.getElementById('stat-smm-val');
+    const calsVal = document.getElementById('header-cals-val');
+
+    if (nameBadge) nameBadge.innerText = `پروفایل: ${a.name}`;
+    if (subtitle) subtitle.innerText = `سیستم هوشمند فیزیولوژی، تنظیم تطبیقی اضافه‌بار و مربیگری اختصاصی ${a.name}`;
+    if (smmBadge) smmBadge.innerText = `عضله اسکلتی: ${a.smm} کیلو`;
+    if (weightVal) weightVal.innerHTML = `${a.startWeight.toFixed(1)} <span style="font-size: 14px; color: var(--text-muted);">-> ${a.targetWeight.toFixed(1)} kg</span>`;
+    if (smmVal) smmVal.innerHTML = `${a.smm.toFixed(1)} <span style="font-size: 13px;">کیلوگرم</span>`;
+    if (calsVal) calsVal.innerHTML = `${a.baseCalories.toLocaleString('fa-IR')} <span style="font-size: 13px;">kcal</span>`;
+}
+
+function openProfileModal() {
+    const modal = document.getElementById('profile-settings-modal');
+    if (!modal) return;
+    const a = APEX_DATA.athlete;
+
+    const nameInput = document.getElementById('prof-input-name');
+    const weightInput = document.getElementById('prof-input-weight');
+    const targetWeightInput = document.getElementById('prof-input-target-weight');
+    const smmInput = document.getElementById('prof-input-smm');
+    const caloriesInput = document.getElementById('prof-input-calories');
+
+    if (nameInput) nameInput.value = a.name;
+    if (weightInput) weightInput.value = a.startWeight;
+    if (targetWeightInput) targetWeightInput.value = a.targetWeight;
+    if (smmInput) smmInput.value = a.smm;
+    if (caloriesInput) caloriesInput.value = a.baseCalories;
+
+    modal.style.display = 'flex';
+}
+
+function closeProfileModal() {
+    const modal = document.getElementById('profile-settings-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function saveProfileSettings() {
+    const name = (document.getElementById('prof-input-name').value || '').trim() || 'امیر';
+    const weight = parseFloat(document.getElementById('prof-input-weight').value) || 88.0;
+    const targetWeight = parseFloat(document.getElementById('prof-input-target-weight').value) || 83.0;
+    const smm = parseFloat(document.getElementById('prof-input-smm').value) || 43.6;
+    const baseCalories = parseInt(document.getElementById('prof-input-calories').value, 10) || 2380;
+
+    const profileData = { name, weight, targetWeight, smm, baseCalories };
+    localStorage.setItem('apex_athlete_profile', JSON.stringify(profileData));
+
+    APEX_DATA.athlete.name = name;
+    APEX_DATA.athlete.startWeight = weight;
+    APEX_DATA.athlete.targetWeight = targetWeight;
+    APEX_DATA.athlete.smm = smm;
+    APEX_DATA.athlete.baseCalories = baseCalories;
+
+    renderAthleteHeader();
+    renderNutrition();
+    closeProfileModal();
+    playChime();
+    alert(`پروفایل ورزشکار (${name}) با موفقیت ذخیره و روی تمام ماژول‌های برنامه اعمال شد.`);
+}
+
+function resetAllAppData() {
+    if (confirm('آیا مطمئن هستید که می‌خواهید تمام رکوردهای ثبت‌شده، وزن‌ها و تیک‌ها را پاکسازی کرده و برنامه را ریست کارخانه‌ای کنید؟')) {
+        localStorage.clear();
+        alert('تمام داده‌ها پاکسازی شدند. صفحه بارگذاری مجدد می‌شود.');
+        window.location.reload();
     }
 }
 
@@ -426,7 +516,11 @@ function renderWorkouts() {
         </div>
     `;
 
+    const scrollPos = window.scrollY;
     contentArea.innerHTML = html;
+    if (scrollPos > 0) {
+        window.scrollTo(0, scrollPos);
+    }
 }
 
 function calculateSessionVolume(workout) {
@@ -570,6 +664,33 @@ function toggleSetDone(exId, setNum, restSec) {
         STATE.loggedSets[exId].push(item);
     }
     item.done = !item.done;
+
+    if (item.done) {
+        const prev = STATE.previousSessions[exId];
+        const workout = APEX_DATA.workouts.find(w => w.id === STATE.selectedWorkoutId);
+        const ex = workout ? workout.exercises.find(e => e.id === exId) : null;
+
+        // Auto-fill weight from previous session or prescribed baseline if left blank
+        if (!item.weight) {
+            item.weight = (prev && prev.weight) ? prev.weight : (ex && ex.startingWeight ? ex.startingWeight : 20);
+        }
+        // Auto-fill reps if left blank
+        if (!item.reps) {
+            let defaultReps = 10;
+            if (prev && prev.reps) {
+                defaultReps = prev.reps;
+            } else if (ex && ex.reps) {
+                const match = String(ex.reps).match(/\d+/g);
+                if (match) defaultReps = parseInt(match[match.length - 1], 10);
+            }
+            item.reps = defaultReps;
+        }
+
+        STATE.previousSessions[exId] = { weight: item.weight, reps: item.reps };
+        savePrevious();
+        playChime();
+    }
+
     saveSets();
     renderWorkouts();
 
@@ -578,7 +699,7 @@ function toggleSetDone(exId, setNum, restSec) {
     }
 }
 
-// Timer
+// Timer & Floating Rest Widget
 function setTimer(sec) {
     STATE.timer.total = sec;
     STATE.timer.remaining = sec;
@@ -591,6 +712,14 @@ function startTimer() {
     STATE.timer.isRunning = true;
     updateTimerBtn();
 
+    const floatingWidget = document.getElementById('floating-rest-timer');
+    if (floatingWidget) floatingWidget.style.display = 'flex';
+    const floatingMeta = document.getElementById('floating-timer-lbl');
+    if (floatingMeta) {
+        floatingMeta.innerText = 'استراحت بین ست';
+        floatingMeta.style.color = 'var(--text-muted)';
+    }
+
     STATE.timer.intervalId = setInterval(() => {
         if (STATE.timer.remaining > 0) {
             STATE.timer.remaining--;
@@ -598,6 +727,14 @@ function startTimer() {
         } else {
             pauseTimer();
             playChime();
+            if (navigator.vibrate) {
+                try { navigator.vibrate([300, 150, 300]); } catch(e) {}
+            }
+            const floatingMeta = document.getElementById('floating-timer-lbl');
+            if (floatingMeta) {
+                floatingMeta.innerText = '⚡ زمان استراحت تمام شد! شروع ست بعدی';
+                floatingMeta.style.color = 'var(--emerald-400)';
+            }
         }
     }, 1000);
 }
@@ -606,6 +743,21 @@ function pauseTimer() {
     STATE.timer.isRunning = false;
     clearInterval(STATE.timer.intervalId);
     updateTimerBtn();
+}
+
+function toggleTimerRunning() {
+    if (STATE.timer.isRunning) {
+        pauseTimer();
+    } else {
+        if (STATE.timer.remaining <= 0) STATE.timer.remaining = STATE.timer.total;
+        startTimer();
+    }
+}
+
+function closeFloatingTimer() {
+    pauseTimer();
+    const floatingWidget = document.getElementById('floating-rest-timer');
+    if (floatingWidget) floatingWidget.style.display = 'none';
 }
 
 function resetTimer() {
@@ -620,11 +772,23 @@ function adjustTimer(delta) {
 }
 
 function updateTimerText() {
-    const el = document.getElementById('timer-val');
-    if (!el) return;
     const m = Math.floor(STATE.timer.remaining / 60);
     const s = STATE.timer.remaining % 60;
-    el.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    const str = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
+    const el = document.getElementById('timer-val');
+    if (el) el.innerText = str;
+
+    const floatingVal = document.getElementById('floating-timer-val');
+    if (floatingVal) floatingVal.innerText = str;
+
+    const floatingBtn = document.getElementById('btn-floating-toggle');
+    if (floatingBtn) floatingBtn.innerText = STATE.timer.isRunning ? '⏸' : '▶';
+
+    const floatingWidget = document.getElementById('floating-rest-timer');
+    if (floatingWidget && (STATE.timer.isRunning || STATE.timer.remaining > 0)) {
+        floatingWidget.style.display = 'flex';
+    }
 }
 
 function updateTimerBtn() {
@@ -633,6 +797,8 @@ function updateTimerBtn() {
         b.innerText = STATE.timer.isRunning ? 'توقف' : 'شروع';
         b.onclick = STATE.timer.isRunning ? pauseTimer : startTimer;
     }
+    const floatingBtn = document.getElementById('btn-floating-toggle');
+    if (floatingBtn) floatingBtn.innerText = STATE.timer.isRunning ? '⏸' : '▶';
 }
 
 // Nutrition
@@ -942,6 +1108,7 @@ function renderSupplementsChecklist() {
     const currentHour = new Date().getHours();
     let completedCount = 0;
     let nextUpcoming = null;
+    let currentDueSupp = null;
 
     const icons = {
         'supp_d3': '☀️',
@@ -956,6 +1123,11 @@ function renderSupplementsChecklist() {
         if (isDone) completedCount++;
 
         const isOverdue = !isDone && currentHour >= supp.reminderHour;
+        const isCurrentWindow = !isDone && !isOverdue && currentHour >= (supp.startHour || 0) && currentHour <= (supp.endHour || 24);
+
+        if (!isDone && isCurrentWindow && !currentDueSupp) {
+            currentDueSupp = supp;
+        }
         if (!isDone && !nextUpcoming) {
             nextUpcoming = supp;
         }
@@ -964,15 +1136,17 @@ function renderSupplementsChecklist() {
         if (isDone) {
             statusBadgeHtml = `<span class="supp-status-badge done">✓ مصرف شد</span>`;
         } else if (isOverdue) {
-            statusBadgeHtml = `<span class="supp-status-badge overdue">⚠️ نیاز به مصرف (موعد گذشته)</span>`;
+            statusBadgeHtml = `<span class="supp-status-badge overdue">⚠️ تاخیر در مصرف (موعد گذشته)</span>`;
+        } else if (isCurrentWindow) {
+            statusBadgeHtml = `<span class="supp-status-badge current-window">🔥 نوبت مصرف اکنون</span>`;
         } else {
-            statusBadgeHtml = `<span class="supp-status-badge upcoming">⏳ در انتظار مصرف</span>`;
+            statusBadgeHtml = `<span class="supp-status-badge upcoming">⏳ در انتظار موعد مقرر</span>`;
         }
 
         const icon = icons[supp.id] || '💊';
 
         return `
-            <div class="supp-card ${isDone ? 'checked' : ''}" id="supp-card-${supp.id}">
+            <div class="supp-card ${isDone ? 'checked' : ''} ${isOverdue ? 'card-overdue' : ''}" id="supp-card-${supp.id}">
                 <div class="supp-card-top">
                     <div class="supp-card-title-group">
                         <div class="supp-card-icon">${icon}</div>
@@ -1020,8 +1194,11 @@ function renderSupplementsChecklist() {
         if (completedCount === totalCount) {
             nextDueText.innerText = '🎉 تمام مکمل‌های امروز مصرف شدند!';
             nextDueText.style.color = 'var(--emerald-400)';
+        } else if (currentDueSupp) {
+            nextDueText.innerText = `🔥 نوبت مصرف اکنون: ${currentDueSupp.name.split('(')[0].trim()}`;
+            nextDueText.style.color = 'var(--amber-400)';
         } else if (nextUpcoming) {
-            nextDueText.innerText = `⏰ مورد بعدی در انتظار: ${nextUpcoming.name.split('(')[0].trim()}`;
+            nextDueText.innerText = `⏰ مورد بعدی: ${nextUpcoming.name.split('(')[0].trim()}`;
             nextDueText.style.color = 'var(--cyan-400)';
         }
     }
@@ -1055,6 +1232,12 @@ function checkSupplementReminders() {
         return !isDone && currentHour >= s.reminderHour;
     });
 
+    const currentWindowList = list.filter(s => {
+        const isDone = !!STATE.supplementsDone[s.id];
+        const isOverdue = !isDone && currentHour >= s.reminderHour;
+        return !isDone && !isOverdue && currentHour >= (s.startHour || 0) && currentHour <= (s.endHour || 24);
+    });
+
     const banner = document.getElementById('global-supp-reminder-bar');
     const titleEl = document.getElementById('supp-reminder-title');
     const descEl = document.getElementById('supp-reminder-desc');
@@ -1063,9 +1246,16 @@ function checkSupplementReminders() {
 
     if (overdueList.length > 0) {
         banner.style.display = 'flex';
+        banner.style.borderColor = 'rgba(244, 63, 94, 0.6)';
         const names = overdueList.map(s => s.name.split('(')[0].trim()).join('، ');
-        if (titleEl) titleEl.innerText = `⚠️ یادآوری مربی: موعد مصرف ${overdueList.length} مکمل گذشته است!`;
-        if (descEl) descEl.innerText = `هنوز ${names} را مصرف نکرده‌اید. لطفاً برای جلوگیری از افت ریکاوری و تاندون‌ها مصرف کنید.`;
+        if (titleEl) titleEl.innerText = `⚠️ هشدار مربی: موعد مصرف ${overdueList.length} مکمل گذشته است!`;
+        if (descEl) descEl.innerText = `هنوز ${names} را مصرف نکرده‌اید. لطفاً سریع‌تر مصرف کنید تا ریکاوری عضلات و مفاصل به تاخیر نیفتد.`;
+    } else if (currentWindowList.length > 0) {
+        banner.style.display = 'flex';
+        banner.style.borderColor = 'rgba(245, 158, 11, 0.5)';
+        const names = currentWindowList.map(s => s.name.split('(')[0].trim()).join('، ');
+        if (titleEl) titleEl.innerText = `🔥 یادآوری مصرف: نوبت مصرف ${names} در این ساعت`;
+        if (descEl) descEl.innerText = `${currentWindowList[0].timeLabel} - بعد از مصرف، تیک آن را در چک‌لیست ثبت کنید.`;
     } else {
         banner.style.display = 'none';
     }
