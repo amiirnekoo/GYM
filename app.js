@@ -19,6 +19,7 @@ const STATE = {
     },
     padelMatchToday: false,
     adaptiveCaloriesOffset: 0,
+    supplementsDone: {},
     metronome: {
         isRunning: false,
         timerId: null,
@@ -38,6 +39,34 @@ const STATE = {
 };
 
 // Storage
+function getTodayDateString() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function initSupplementsStorage() {
+    try {
+        const today = getTodayDateString();
+        const storedDate = localStorage.getItem('apex_supps_date');
+        const storedDone = localStorage.getItem('apex_supps_done');
+
+        if (storedDate === today && storedDone) {
+            STATE.supplementsDone = JSON.parse(storedDone);
+        } else {
+            STATE.supplementsDone = {};
+            localStorage.setItem('apex_supps_date', today);
+            saveSupplements();
+        }
+    } catch (e) {
+        STATE.supplementsDone = {};
+    }
+}
+
+function saveSupplements() {
+    localStorage.setItem('apex_supps_done', JSON.stringify(STATE.supplementsDone));
+    localStorage.setItem('apex_supps_date', getTodayDateString());
+}
+
 function initStorage() {
     try {
         const sets = localStorage.getItem('apex_ai_sets');
@@ -76,6 +105,8 @@ function initStorage() {
 
         const padel = localStorage.getItem('apex_ai_padel');
         if (padel) STATE.padelMatchToday = JSON.parse(padel);
+
+        initSupplementsStorage();
 
     } catch (e) {
         console.warn('Storage error:', e);
@@ -255,6 +286,9 @@ function switchTab(tabId) {
 
     if (tabId === 'progress') {
         setTimeout(renderVolumeChart, 100);
+    }
+    if (tabId === 'supplements') {
+        renderSupplementsChecklist();
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -473,6 +507,12 @@ function renderExerciseBox(ex) {
             </div>
 
             ${recommendationBadge}
+            ${ex.technique ? `
+                <div class="exercise-technique-badge">
+                    <span style="font-size: 18px;">⚡</span>
+                    <div><b>تکنیک پیشرفته هایپرتروفی:</b> ${ex.technique}</div>
+                </div>
+            ` : ''}
 
             <div class="exercise-specs">
                 <span class="spec-pill target">${ex.target}</span>
@@ -887,6 +927,150 @@ function renderWeights() {
     `).join('');
 }
 
+// ==========================================================================
+// FEATURE: Daily Supplement & Pill Checklist Engine with Smart Reminders
+// ==========================================================================
+function renderSupplementsChecklist() {
+    const container = document.getElementById('supplements-grid-container');
+    const progressText = document.getElementById('supp-progress-text');
+    const nextDueText = document.getElementById('supp-next-due-text');
+    const barFill = document.getElementById('supp-progress-bar-fill');
+
+    if (!container) return;
+
+    const list = APEX_DATA.supplementsSchedule || [];
+    const currentHour = new Date().getHours();
+    let completedCount = 0;
+    let nextUpcoming = null;
+
+    const icons = {
+        'supp_d3': '☀️',
+        'supp_omega': '🐟',
+        'supp_creatine': '⚡',
+        'supp_whey': '🥛',
+        'supp_zma': '🌙'
+    };
+
+    const cardsHtml = list.map(supp => {
+        const isDone = !!STATE.supplementsDone[supp.id];
+        if (isDone) completedCount++;
+
+        const isOverdue = !isDone && currentHour >= supp.reminderHour;
+        if (!isDone && !nextUpcoming) {
+            nextUpcoming = supp;
+        }
+
+        let statusBadgeHtml = '';
+        if (isDone) {
+            statusBadgeHtml = `<span class="supp-status-badge done">✓ مصرف شد</span>`;
+        } else if (isOverdue) {
+            statusBadgeHtml = `<span class="supp-status-badge overdue">⚠️ نیاز به مصرف (موعد گذشته)</span>`;
+        } else {
+            statusBadgeHtml = `<span class="supp-status-badge upcoming">⏳ در انتظار مصرف</span>`;
+        }
+
+        const icon = icons[supp.id] || '💊';
+
+        return `
+            <div class="supp-card ${isDone ? 'checked' : ''}" id="supp-card-${supp.id}">
+                <div class="supp-card-top">
+                    <div class="supp-card-title-group">
+                        <div class="supp-card-icon">${icon}</div>
+                        <div class="supp-card-name">
+                            <h4>${supp.name}</h4>
+                            <span>فرم مصرف: ${supp.form}</span>
+                        </div>
+                    </div>
+                    <button class="supp-checkbox-btn" onclick="toggleSupplementDone('${supp.id}')" title="ثبت تیک مصرف">
+                        ${isDone ? '✓' : ''}
+                    </button>
+                </div>
+
+                <div class="supp-purpose-box">
+                    <b>🎯 هدف فیزیولوژیک:</b> ${supp.purpose}
+                </div>
+
+                <div class="supp-food-tip">
+                    🥗 <b>دستور مصرف:</b> ${supp.withFood}
+                </div>
+
+                <div class="supp-meta-row">
+                    <span class="supp-time-pill">
+                        ⏰ ${supp.timeLabel}
+                    </span>
+                    ${statusBadgeHtml}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = cardsHtml;
+
+    // Update progress bar
+    const totalCount = list.length;
+    const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+    if (progressText) {
+        progressText.innerText = `پیشرفت مصرف امروز: ${completedCount} از ${totalCount} مورد (${pct}٪ تکمیل شده)`;
+    }
+    if (barFill) {
+        barFill.style.width = `${pct}%`;
+    }
+    if (nextDueText) {
+        if (completedCount === totalCount) {
+            nextDueText.innerText = '🎉 تمام مکمل‌های امروز مصرف شدند!';
+            nextDueText.style.color = 'var(--emerald-400)';
+        } else if (nextUpcoming) {
+            nextDueText.innerText = `⏰ مورد بعدی در انتظار: ${nextUpcoming.name.split('(')[0].trim()}`;
+            nextDueText.style.color = 'var(--cyan-400)';
+        }
+    }
+}
+
+function toggleSupplementDone(suppId) {
+    STATE.supplementsDone[suppId] = !STATE.supplementsDone[suppId];
+    saveSupplements();
+    if (STATE.supplementsDone[suppId]) {
+        playChime();
+    }
+    renderSupplementsChecklist();
+    checkSupplementReminders();
+}
+
+function resetSupplementsDaily() {
+    if (confirm('آیا مایلید تمام تیک‌های مصرف امروز ریست شوند و روز جدید را از سر بگیرید؟')) {
+        STATE.supplementsDone = {};
+        saveSupplements();
+        renderSupplementsChecklist();
+        checkSupplementReminders();
+    }
+}
+
+function checkSupplementReminders() {
+    const list = APEX_DATA.supplementsSchedule || [];
+    const currentHour = new Date().getHours();
+
+    const overdueList = list.filter(s => {
+        const isDone = !!STATE.supplementsDone[s.id];
+        return !isDone && currentHour >= s.reminderHour;
+    });
+
+    const banner = document.getElementById('global-supp-reminder-bar');
+    const titleEl = document.getElementById('supp-reminder-title');
+    const descEl = document.getElementById('supp-reminder-desc');
+
+    if (!banner) return;
+
+    if (overdueList.length > 0) {
+        banner.style.display = 'flex';
+        const names = overdueList.map(s => s.name.split('(')[0].trim()).join('، ');
+        if (titleEl) titleEl.innerText = `⚠️ یادآوری مربی: موعد مصرف ${overdueList.length} مکمل گذشته است!`;
+        if (descEl) descEl.innerText = `هنوز ${names} را مصرف نکرده‌اید. لطفاً برای جلوگیری از افت ریکاوری و تاندون‌ها مصرف کنید.`;
+    } else {
+        banner.style.display = 'none';
+    }
+}
+
 // Register PWA Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -900,10 +1084,15 @@ if ('serviceWorker' in navigator) {
 document.addEventListener('DOMContentLoaded', () => {
     initStorage();
     renderWorkouts();
+    renderSupplementsChecklist();
+    checkSupplementReminders();
     renderNutrition();
     renderAsymmetries();
     renderWeights();
     updateReadinessUI();
     updateTimerText();
     updateTimerBtn();
+
+    // Periodic reminder check every 60 seconds
+    setInterval(checkSupplementReminders, 60000);
 });

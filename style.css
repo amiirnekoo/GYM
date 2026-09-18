@@ -632,6 +632,25 @@ body {
     font-weight: 700;
 }
 
+/* Hypertrophy Technique Badge (Drop Sets, Myo-Reps, Partial Cues) */
+.exercise-technique-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.18), rgba(245, 158, 11, 0.18));
+    border: 1px solid rgba(244, 63, 94, 0.45);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: #ffffff;
+    line-height: 1.6;
+}
+
+.exercise-technique-badge b {
+    color: #fb7185;
+}
+
 /* Sets Table */
 .sets-table {
     width: 100%;
@@ -799,6 +818,286 @@ body {
     height: 220px;
     position: relative;
     margin-top: 10px;
+}
+
+/* ==========================================================================
+   SMART SUPPLEMENTS & PILLS TRACKER SYSTEM
+   Checklist, Progress Bar, Active Reminder Banner & Status Tags
+   ========================================================================== */
+
+.supp-reminder-banner {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(24, 34, 52, 0.98));
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    border-radius: var(--radius-lg);
+    padding: 16px 22px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    box-shadow: 0 4px 25px rgba(245, 158, 11, 0.2);
+    animation: gentlePulse 3s infinite alternate ease-in-out;
+}
+
+@keyframes gentlePulse {
+    from { box-shadow: 0 4px 15px rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); }
+    to { box-shadow: 0 4px 28px rgba(245, 158, 11, 0.35); border-color: rgba(245, 158, 11, 0.8); }
+}
+
+.supp-reminder-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.supp-reminder-icon {
+    font-size: 26px;
+    width: 48px;
+    height: 48px;
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid var(--amber-400);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.supp-reminder-text h4 {
+    font-size: 15px;
+    font-weight: 900;
+    color: #ffffff;
+}
+
+.supp-reminder-text p {
+    font-size: 12.8px;
+    color: var(--amber-400);
+    margin-top: 2px;
+}
+
+.btn-view-supps {
+    background: var(--amber-500);
+    color: #451a03;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 9px 18px;
+    font-size: 12.5px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
+}
+
+.btn-view-supps:hover {
+    background: #fbbf24;
+    transform: translateY(-1px);
+}
+
+/* Supplement View Components */
+.supp-progress-box {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 18px 22px;
+    margin-bottom: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.supp-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.supp-progress-bar-bg {
+    width: 100%;
+    height: 10px;
+    background: var(--bg-inner);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.supp-progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--emerald-500), var(--cyan-400));
+    border-radius: var(--radius-full);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.supp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 18px;
+    margin-top: 16px;
+}
+
+.supp-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: var(--transition);
+    position: relative;
+    box-shadow: var(--shadow-soft);
+}
+
+.supp-card:hover {
+    border-color: var(--border-bright);
+    transform: translateY(-2px);
+}
+
+.supp-card.checked {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), var(--bg-card));
+    border-color: var(--emerald-500);
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15);
+}
+
+.supp-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.supp-card-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.supp-card-icon {
+    font-size: 24px;
+    width: 44px;
+    height: 44px;
+    background: var(--bg-inner);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.supp-card-name h4 {
+    font-size: 15px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.4;
+}
+
+.supp-card-name span {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.supp-checkbox-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    background: var(--bg-inner);
+    border: 2px solid var(--border-bright);
+    color: transparent;
+    font-size: 20px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+
+.supp-checkbox-btn:hover {
+    border-color: var(--emerald-400);
+    color: rgba(52, 211, 153, 0.4);
+}
+
+.supp-card.checked .supp-checkbox-btn {
+    background: var(--emerald-500);
+    border-color: var(--emerald-400);
+    color: #042f2e;
+    box-shadow: 0 0 16px var(--emerald-glow);
+}
+
+.supp-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+}
+
+.supp-time-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--cyan-400);
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    padding: 5px 12px;
+    border-radius: var(--radius-full);
+}
+
+.supp-status-badge {
+    font-size: 11.5px;
+    font-weight: 800;
+    padding: 5px 12px;
+    border-radius: var(--radius-full);
+}
+
+.supp-status-badge.done {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--emerald-400);
+    border: 1px solid var(--emerald-500);
+}
+
+.supp-status-badge.overdue {
+    background: rgba(244, 63, 94, 0.2);
+    color: #fb7185;
+    border: 1px solid var(--rose-500);
+    animation: gentlePulse 2s infinite alternate;
+}
+
+.supp-status-badge.upcoming {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.supp-purpose-box {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    background: var(--bg-inner);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    border: 1px solid var(--border-color);
+}
+
+.supp-purpose-box b {
+    color: #ffffff;
+}
+
+.supp-food-tip {
+    font-size: 12px;
+    color: var(--emerald-400);
+    background: rgba(16, 185, 129, 0.08);
+    border-right: 3px solid var(--emerald-500);
+    padding: 6px 12px;
+    border-radius: 4px;
 }
 
 /* Floating AI Coach Modal */
@@ -974,9 +1273,10 @@ body {
     background: rgba(24, 34, 52, 0.98);
     backdrop-filter: blur(20px);
     border-top: 1px solid var(--border-color);
-    padding: 8px 12px;
+    padding: 6px 6px;
     z-index: 1000;
     justify-content: space-around;
+    overflow-x: auto;
 }
 
 .mobile-nav-btn {
@@ -988,12 +1288,21 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 3px;
     cursor: pointer;
+    padding: 6px 4px;
+    min-width: 52px;
+    white-space: nowrap;
+    transition: var(--transition);
+}
+
+.mobile-nav-btn span {
+    font-size: 10.5px;
 }
 
 .mobile-nav-btn.active {
     color: var(--emerald-400);
+    font-weight: 900;
 }
 
 /* Responsive */
